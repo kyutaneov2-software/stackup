@@ -1,1822 +1,791 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<meta name="theme-color" content="#07070e"/>
-<meta name="description" content="StackUp — Gamified money tracker for students and side hustlers"/>
-<meta name="mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-<meta name="apple-mobile-web-app-title" content="StackUp"/>
-<meta name="application-name" content="StackUp"/>
-<link rel="manifest" href="#" id="pwa-manifest"/>
-<link rel="apple-touch-icon" href="#" id="pwa-icon-apple"/>
-<title>StackUp — Money Tracker</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
-<style>
-/* ═══════════════════════════════════════════════
-   RESET & TOKENS
-═══════════════════════════════════════════════ */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-:root {
-  --bg:       #07070e;
-  --s1:       #0d0d1c;
-  --s2:       #13132a;
-  --s3:       #1b1b38;
-  --s4:       #222244;
-  --border:   rgba(255,255,255,0.06);
-  --border2:  rgba(255,255,255,0.10);
-  --border3:  rgba(255,255,255,0.14);
-
-  --purple:    #7c3aed;
-  --purple-l:  #9d5cf7;
-  --purple-ll: #c084fc;
-  --purple-dim: rgba(124,58,237,0.15);
-
-  --gold:    #d97706;
-  --gold-l:  #f59e0b;
-  --gold-ll: #fcd34d;
-
-  --income:   #10b981;
-  --income-l: #34d399;
-  --expense:  #f43f5e;
-  --expense-l:#fb7185;
-  --saving:   #06b6d4;
-  --saving-l: #22d3ee;
-  --invest:   #d97706;
-  --invest-l: #f59e0b;
-
-  --white: #eeeeff;
-  --muted: rgba(200,200,255,0.42);
-  --muted2:rgba(200,200,255,0.18);
-
-  --ff-d: 'Syne', sans-serif;
-  --ff-b: 'Plus Jakarta Sans', sans-serif;
-
-  --r:    20px;
-  --r-sm: 14px;
-  --r-xs: 10px;
-
-  /* layout */
-  --sidebar-w: 240px;
-  --topbar-h:  60px;
-  --bnav-h:    68px;
-}
-
-html { scroll-behavior: smooth; }
-
-body {
-  font-family: var(--ff-b);
-  font-size: 14px;
-  color: var(--white);
-  background: var(--bg);
-  -webkit-font-smoothing: antialiased;
-  min-height: 100vh;
-  overflow-x: hidden;
-}
-
-svg { stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; fill: none; display: block; }
-input, select, button, textarea { font-family: var(--ff-b); }
-button { cursor: pointer; }
-
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(124,58,237,0.35); border-radius: 99px; }
-
-/* ═══════════════════════════════════════════════
-   AUTH SCREEN
-═══════════════════════════════════════════════ */
-#auth-screen {
-  position: fixed; inset: 0; z-index: 500;
-  display: flex; align-items: center; justify-content: center;
-  padding: 20px;
-  background: radial-gradient(ellipse 80% 50% at 50% -5%, rgba(124,58,237,0.28) 0%, transparent 65%), var(--bg);
-  overflow-y: auto;
-}
-
-.auth-box {
-  width: 100%; max-width: 420px;
-  animation: fadeUp .5s ease both;
-}
-
-.auth-brand { text-align: center; margin-bottom: 36px; }
-.auth-logo-wrap {
-  width: 64px; height: 64px; border-radius: 20px; margin: 0 auto 16px;
-  background: linear-gradient(145deg, var(--purple), var(--purple-l));
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 0 0 1px rgba(124,58,237,0.4), 0 16px 48px rgba(124,58,237,0.45);
-}
-.auth-title {
-  font-family: var(--ff-d); font-size: 38px; font-weight: 800; letter-spacing: -1.8px;
-  background: linear-gradient(135deg, #fff 20%, var(--purple-ll) 65%, var(--gold-ll));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-.auth-sub { color: var(--muted); font-size: 13px; margin-top: 6px; }
-
-.auth-toggle {
-  display: flex; background: var(--s2); border-radius: 13px;
-  padding: 5px; gap: 4px; margin-bottom: 20px;
-  border: 1px solid var(--border);
-}
-.auth-tab {
-  flex: 1; padding: 10px; border-radius: 9px; border: none;
-  font-size: 13px; font-weight: 600; color: var(--muted);
-  background: transparent; transition: all .22s;
-}
-.auth-tab.on {
-  background: linear-gradient(135deg, var(--purple), var(--purple-l));
-  color: #fff; box-shadow: 0 4px 16px rgba(124,58,237,0.4);
-}
-
-.auth-card {
-  background: rgba(13,13,28,0.9); border: 1px solid var(--border2);
-  border-radius: var(--r); padding: 28px;
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-}
-
-.field { margin-bottom: 15px; }
-.field label {
-  display: block; font-size: 11px; color: var(--muted);
-  font-weight: 600; letter-spacing: .8px; text-transform: uppercase; margin-bottom: 7px;
-}
-.field input {
-  width: 100%; padding: 13px 16px;
-  background: var(--s3); border: 1px solid var(--border2); border-radius: var(--r-sm);
-  color: var(--white); font-size: 14px; font-weight: 500;
-  outline: none; transition: border-color .2s, box-shadow .2s;
-  -webkit-appearance: none;
-}
-.field input:focus { border-color: var(--purple); box-shadow: 0 0 0 3px rgba(124,58,237,0.14); }
-.field input::placeholder { color: var(--muted2); }
-
-.auth-err { color: var(--expense-l); font-size: 12.5px; margin-bottom: 13px; font-weight: 500; display: none; }
-
-.btn-primary {
-  width: 100%; padding: 14px; border: none; border-radius: var(--r-sm);
-  font-family: var(--ff-d); font-weight: 700; font-size: 15px; letter-spacing: .3px;
-  background: linear-gradient(135deg, var(--purple) 0%, var(--purple-l) 100%);
-  color: #fff; transition: all .22s;
-  box-shadow: 0 6px 22px rgba(124,58,237,0.38);
-}
-.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(124,58,237,0.52); }
-.btn-primary:active { transform: translateY(0); }
-
-.auth-footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 16px; }
-
-/* ═══════════════════════════════════════════════
-   APP LAYOUT — MOBILE FIRST
-═══════════════════════════════════════════════ */
-#app { display: none; min-height: 100vh; }
-#app.visible { display: flex; flex-direction: column; }
-
-/* ── MOBILE TOPBAR ── */
-#mob-topbar {
-  position: sticky; top: 0; z-index: 100;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0 18px;
-  height: var(--topbar-h);
-  background: rgba(7,7,14,0.92);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border-bottom: 1px solid var(--border);
-}
-.mob-logo {
-  font-family: var(--ff-d); font-size: 21px; font-weight: 800; letter-spacing: -0.7px;
-  background: linear-gradient(135deg, var(--purple-ll), var(--gold-ll));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-.mob-topbar-right { display: flex; align-items: center; gap: 10px; }
-.lv-pill {
-  display: flex; align-items: center; gap: 6px;
-  padding: 5px 11px 5px 7px;
-  background: rgba(124,58,237,0.12); border: 1px solid rgba(124,58,237,0.25);
-  border-radius: 99px;
-}
-.lv-badge {
-  width: 22px; height: 22px; border-radius: 50%;
-  background: linear-gradient(135deg, var(--purple), var(--gold-l));
-  display: flex; align-items: center; justify-content: center;
-  font-family: var(--ff-d); font-size: 9px; font-weight: 800; color: #fff;
-}
-.lv-text { font-size: 11.5px; font-weight: 600; color: var(--purple-ll); }
-.xp-label { font-size: 11px; color: var(--muted); font-weight: 500; }
-
-/* ── MAIN CONTENT ── */
-#main-content { flex: 1; }
-
-/* ── PAGES ── */
-.page { display: none; padding-bottom: calc(var(--bnav-h) + 16px); }
-.page.on { display: block; }
-
-/* ── MOBILE BOTTOM NAV ── */
-#mob-bnav {
-  position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
-  display: flex; align-items: center; justify-content: space-around;
-  height: var(--bnav-h);
-  padding: 8px 4px calc(8px + env(safe-area-inset-bottom));
-  background: rgba(7,7,14,0.96);
-  backdrop-filter: blur(30px);
-  -webkit-backdrop-filter: blur(30px);
-  border-top: 1px solid var(--border);
-}
-.nav-btn {
-  display: flex; flex-direction: column; align-items: center; gap: 4px;
-  padding: 7px 20px; border-radius: 14px; border: none;
-  background: transparent; color: var(--muted);
-  font-size: 9.5px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase;
-  transition: all .2s; min-width: 60px;
-}
-.nav-btn svg { width: 21px; height: 21px; stroke: currentColor; transition: stroke .2s; }
-.nav-btn.on { color: var(--purple-ll); background: var(--purple-dim); }
-.nav-btn:not(.on):hover { color: rgba(200,200,255,0.8); }
-
-/* ═══════════════════════════════════════════════
-   DESKTOP LAYOUT (≥768px)
-═══════════════════════════════════════════════ */
-@media (min-width: 768px) {
-  #mob-topbar { display: none; }
-  #mob-bnav   { display: none; }
-
-  #app.visible {
-    flex-direction: row;
-    min-height: 100vh;
-  }
-
-  /* SIDEBAR */
-  #sidebar {
-    display: flex;
-    width: var(--sidebar-w);
-    flex-shrink: 0;
-    flex-direction: column;
-    position: sticky;
-    top: 0;
-    height: 100vh;
-    background: var(--s1);
-    border-right: 1px solid var(--border);
-    padding: 28px 16px;
-    gap: 6px;
-  }
-
-  .sb-brand {
-    display: flex; align-items: center; gap: 10px;
-    padding: 0 8px; margin-bottom: 28px;
-  }
-  .sb-brand-icon {
-    width: 36px; height: 36px; border-radius: 11px; flex-shrink: 0;
-    background: linear-gradient(145deg, var(--purple), var(--purple-l));
-    display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 6px 20px rgba(124,58,237,0.4);
-  }
-  .sb-brand-name {
-    font-family: var(--ff-d); font-size: 20px; font-weight: 800; letter-spacing: -.6px;
-    background: linear-gradient(135deg, var(--purple-ll), var(--gold-ll));
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  .sb-nav-item {
-    display: flex; align-items: center; gap: 12px;
-    padding: 11px 14px; border-radius: 13px; border: none;
-    background: transparent; color: var(--muted);
-    font-size: 13.5px; font-weight: 600; text-align: left;
-    transition: all .2s; width: 100%;
-  }
-  .sb-nav-item svg { width: 20px; height: 20px; stroke: currentColor; flex-shrink: 0; transition: stroke .2s; }
-  .sb-nav-item.on { color: var(--white); background: var(--purple-dim); }
-  .sb-nav-item.on svg { stroke: var(--purple-ll); }
-  .sb-nav-item:not(.on):hover { color: var(--white); background: rgba(255,255,255,0.04); }
-
-  .sb-spacer { flex: 1; }
-
-  /* XP widget in sidebar */
-  .sb-xp-card {
-    background: var(--s2); border: 1px solid var(--border2);
-    border-radius: 16px; padding: 14px;
-    margin-top: 8px;
-  }
-  .sb-xp-top {
-    display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;
-  }
-  .sb-lv-badge {
-    display: flex; align-items: center; gap: 7px;
-  }
-  .sb-lv-dot {
-    width: 28px; height: 28px; border-radius: 50%;
-    background: linear-gradient(135deg, var(--purple), var(--gold-l));
-    display: flex; align-items: center; justify-content: center;
-    font-family: var(--ff-d); font-size: 11px; font-weight: 800; color: #fff;
-  }
-  .sb-lv-label { font-size: 12px; font-weight: 600; color: var(--purple-ll); }
-  .sb-xp-num { font-size: 11px; color: var(--muted); font-weight: 500; }
-  .sb-bar { height: 5px; background: rgba(255,255,255,0.07); border-radius: 99px; overflow: hidden; }
-  .sb-fill {
-    height: 100%; border-radius: 99px;
-    background: linear-gradient(90deg, var(--purple), var(--gold-l));
-    transition: width .9s cubic-bezier(.34,1.56,.64,1);
-  }
-
-  /* PAGE area on desktop */
-  #main-content {
-    flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    min-height: 100vh;
-  }
-
-  .page { padding-bottom: 48px; }
-
-  /* desktop page inner max-width */
-  .page-inner {
-    max-width: 780px;
-    margin: 0 auto;
-    padding: 32px 28px;
-  }
-}
-
-/* ═══════════════════════════════════════════════
-   SIDEBAR — hidden on mobile
-═══════════════════════════════════════════════ */
-#sidebar { display: none; }
-
-/* ═══════════════════════════════════════════════
-   DASHBOARD PAGE
-═══════════════════════════════════════════════ */
-.dash-pad { padding: 18px 18px 0; }
-
-/* HERO CARD */
-.hero-card {
-  border-radius: 26px; padding: 24px; margin-bottom: 18px;
-  position: relative; overflow: hidden;
-  background: linear-gradient(145deg, #170840 0%, #2d1060 45%, #170840 100%);
-  border: 1px solid rgba(124,58,237,0.28);
-  box-shadow: 0 20px 60px rgba(124,58,237,0.22), inset 0 1px 0 rgba(255,255,255,0.07);
-}
-.hero-card::before {
-  content: ''; position: absolute; top: -50px; right: -50px;
-  width: 200px; height: 200px; border-radius: 50%;
-  background: radial-gradient(circle, rgba(124,58,237,0.38) 0%, transparent 70%);
-  pointer-events: none;
-}
-.hero-card::after {
-  content: ''; position: absolute; bottom: -40px; left: -30px;
-  width: 160px; height: 160px; border-radius: 50%;
-  background: radial-gradient(circle, rgba(245,158,11,0.13) 0%, transparent 70%);
-  pointer-events: none;
-}
-.hero-top {
-  display: flex; align-items: flex-start; justify-content: space-between;
-  margin-bottom: 20px; position: relative; z-index: 1;
-}
-.hero-greet p { font-size: 12px; color: rgba(200,200,255,0.5); font-weight: 500; margin-bottom: 2px; }
-.hero-greet h2 { font-family: var(--ff-d); font-size: 22px; font-weight: 800; letter-spacing: -.5px; color: #fff; }
-
-.streak-chip {
-  display: flex; flex-direction: column; align-items: center;
-  background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.22);
-  border-radius: 13px; padding: 8px 14px;
-}
-.streak-num { font-family: var(--ff-d); font-size: 22px; font-weight: 800; color: var(--gold-ll); line-height: 1; }
-.streak-lbl { font-size: 9px; color: rgba(245,158,11,0.65); font-weight: 600; letter-spacing: .5px; text-transform: uppercase; margin-top: 2px; }
-
-/* DONUT + LEGEND */
-.donut-row {
-  display: flex; align-items: center; gap: 18px;
-  position: relative; z-index: 1;
-}
-.donut-wrap { position: relative; flex-shrink: 0; }
-.donut-center {
-  position: absolute; inset: 0;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-}
-.donut-c-label { font-size: 9px; color: rgba(200,200,255,0.5); font-weight: 600; letter-spacing: .6px; text-transform: uppercase; }
-.donut-c-amt {
-  font-family: var(--ff-d); font-size: 16px; font-weight: 800; color: #fff;
-  letter-spacing: -.5px; margin-top: 1px; line-height: 1;
-}
-.donut-c-sub { font-size: 9px; font-weight: 500; margin-top: 2px; }
-.legend { flex: 1; display: flex; flex-direction: column; gap: 8px; }
-.legend-item { display: flex; align-items: center; gap: 9px; }
-.legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.legend-name { font-size: 11px; color: rgba(200,200,255,0.55); font-weight: 500; }
-.legend-val { font-family: var(--ff-d); font-size: 13px; font-weight: 700; color: #fff; }
-
-/* XP bar */
-.hero-xp { margin-top: 18px; position: relative; z-index: 1; }
-.hero-xp-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-.hero-xp-lv { font-family: var(--ff-d); font-size: 12px; font-weight: 700; color: var(--purple-ll); }
-.hero-xp-txt { font-size: 11px; color: rgba(200,200,255,0.42); font-weight: 500; }
-.hero-bar { height: 5px; background: rgba(255,255,255,0.08); border-radius: 99px; overflow: hidden; }
-.hero-fill {
-  height: 100%; border-radius: 99px;
-  background: linear-gradient(90deg, var(--purple), var(--gold-l));
-  transition: width .9s cubic-bezier(.34,1.56,.64,1);
-}
-
-/* SECTION HEADER */
-.sec-hd {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0 18px; margin-bottom: 12px; margin-top: 20px;
-}
-.sec-title { font-family: var(--ff-d); font-size: 16px; font-weight: 700; letter-spacing: -.3px; }
-
-/* STAT GRID */
-.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 18px; margin-bottom: 4px; }
-
-@media (min-width: 500px) {
-  .stat-grid { grid-template-columns: repeat(4, 1fr); }
-}
-
-.stat-card {
-  background: var(--s1); border: 1px solid var(--border);
-  border-radius: 18px; padding: 15px; position: relative; overflow: hidden;
-  transition: transform .2s, border-color .2s;
-}
-.stat-card:hover { transform: translateY(-2px); border-color: var(--border2); }
-.stat-accent { position: absolute; top: 0; left: 0; width: 3px; height: 100%; border-radius: 3px 0 0 3px; }
-.stat-ico { width: 32px; height: 32px; border-radius: 9px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
-.stat-lbl { font-size: 10.5px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: .3px; margin-bottom: 3px; }
-.stat-val { font-family: var(--ff-d); font-size: 17px; font-weight: 800; letter-spacing: -.4px; }
-
-/* BADGE CHIPS */
-.badge-shelf { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 18px; margin-bottom: 4px; }
-.badge-chip {
-  display: flex; align-items: center; gap: 7px;
-  background: var(--s2); border: 1px solid rgba(124,58,237,0.2);
-  border-radius: 11px; padding: 8px 12px;
-}
-.badge-chip-ico {
-  width: 26px; height: 26px; border-radius: 8px; flex-shrink: 0;
-  background: linear-gradient(135deg, var(--purple), var(--gold-l));
-  display: flex; align-items: center; justify-content: center;
-}
-.badge-chip-name { font-size: 12px; font-weight: 600; }
-
-/* TX ROW */
-.tx-list { display: flex; flex-direction: column; gap: 8px; padding: 0 18px; }
-.tx-card {
-  display: flex; align-items: center; gap: 13px;
-  padding: 14px 16px;
-  background: var(--s1); border: 1px solid var(--border); border-radius: 17px;
-  transition: background .15s, border-color .15s;
-}
-.tx-card:hover { background: var(--s2); border-color: var(--border2); }
-.tx-ico {
-  width: 42px; height: 42px; border-radius: 13px; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-}
-.tx-body { flex: 1; min-width: 0; }
-.tx-name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tx-meta { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
-.tx-right { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; flex-shrink: 0; }
-.tx-amt { font-family: var(--ff-d); font-size: 15px; font-weight: 700; }
-.tx-bottom { display: flex; align-items: center; gap: 6px; }
-.tx-tag { font-size: 9.5px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; padding: 2px 8px; border-radius: 99px; }
-.tx-del {
-  background: none; border: none; color: var(--muted); padding: 3px; border-radius: 6px;
-  transition: color .15s, background .15s; opacity: 0; pointer-events: none;
-}
-.tx-card:hover .tx-del { opacity: 1; pointer-events: auto; }
-.tx-del:hover { color: var(--expense-l); background: rgba(244,63,94,0.1); }
-
-/* EMPTY */
-.empty-state {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  padding: 48px 20px; gap: 12px; text-align: center;
-}
-.empty-icon {
-  width: 68px; height: 68px; border-radius: 20px; margin-bottom: 4px;
-  background: var(--s2); border: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: center;
-}
-.empty-state p { color: var(--muted); font-size: 13.5px; line-height: 1.6; }
-
-/* ═══════════════════════════════════════════════
-   LOG PAGE
-═══════════════════════════════════════════════ */
-.log-pad { padding: 24px 18px 0; }
-.log-title { font-family: var(--ff-d); font-size: 26px; font-weight: 800; letter-spacing: -.8px; margin-bottom: 4px; }
-.log-title span { color: var(--purple-ll); }
-.log-sub { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
-
-.type-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 22px; }
-.type-btn {
-  padding: 13px 4px 11px; border-radius: 15px; border: 1.5px solid var(--border);
-  background: var(--s1); transition: all .2s;
-  display: flex; flex-direction: column; align-items: center; gap: 7px;
-}
-.type-btn svg { width: 20px; height: 20px; stroke: var(--muted); transition: stroke .2s; }
-.type-btn-lbl { font-size: 10px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--muted); transition: color .2s; }
-.type-btn:not([data-a]):hover { border-color: var(--border2); }
-.type-btn[data-a="income"]     { border-color: var(--income); background: rgba(16,185,129,0.07); }
-.type-btn[data-a="income"] svg { stroke: var(--income); }
-.type-btn[data-a="income"] .type-btn-lbl { color: var(--income); }
-.type-btn[data-a="expense"]     { border-color: var(--expense); background: rgba(244,63,94,0.07); }
-.type-btn[data-a="expense"] svg { stroke: var(--expense); }
-.type-btn[data-a="expense"] .type-btn-lbl { color: var(--expense); }
-.type-btn[data-a="saving"]     { border-color: var(--saving); background: rgba(6,182,212,0.07); }
-.type-btn[data-a="saving"] svg { stroke: var(--saving); }
-.type-btn[data-a="saving"] .type-btn-lbl { color: var(--saving); }
-.type-btn[data-a="investment"]     { border-color: var(--invest); background: rgba(217,119,6,0.07); }
-.type-btn[data-a="investment"] svg { stroke: var(--invest); }
-.type-btn[data-a="investment"] .type-btn-lbl { color: var(--invest); }
-
-.amt-wrap {
-  background: var(--s2); border: 1.5px solid var(--border2); border-radius: 18px;
-  padding: 16px 20px; display: flex; align-items: center; gap: 8px;
-  margin-bottom: 14px; transition: border-color .2s, box-shadow .2s;
-}
-.amt-wrap:focus-within { border-color: var(--purple); box-shadow: 0 0 0 4px rgba(124,58,237,0.1); }
-.amt-sign { font-family: var(--ff-d); font-size: 28px; font-weight: 800; color: rgba(124,58,237,0.65); }
-.amt-inp {
-  background: transparent; border: none; outline: none;
-  font-family: var(--ff-d); font-weight: 800; font-size: 32px;
-  color: var(--white); width: 100%; letter-spacing: -1.5px;
-}
-.amt-inp::placeholder { color: var(--muted2); }
-
-.form-row { margin-bottom: 14px; }
-.form-lbl {
-  display: block; font-size: 11px; color: var(--muted);
-  font-weight: 700; letter-spacing: .8px; text-transform: uppercase; margin-bottom: 7px;
-}
-.form-ctrl {
-  width: 100%; padding: 13px 16px;
-  background: var(--s2); border: 1.5px solid var(--border2); border-radius: var(--r-sm);
-  color: var(--white); font-size: 14px; font-weight: 500;
-  outline: none; transition: border-color .2s, box-shadow .2s;
-  -webkit-appearance: none; appearance: none;
-}
-.form-ctrl:focus { border-color: var(--purple); box-shadow: 0 0 0 3px rgba(124,58,237,0.1); }
-.form-ctrl::placeholder { color: var(--muted2); }
-select.form-ctrl {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(200,200,255,0.4)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 14px center;
-  padding-right: 38px;
-  cursor: pointer;
-}
-select.form-ctrl option { background: #1b1b38; color: var(--white); }
-
-.log-btn-wrap { margin-top: 22px; }
-
-.suc-banner {
-  display: none; align-items: center; gap: 12px;
-  padding: 14px 16px; margin-top: 14px;
-  background: rgba(16,185,129,0.07); border: 1px solid rgba(16,185,129,0.2);
-  border-radius: 14px; animation: fadeUp .3s ease;
-}
-.suc-banner.show { display: flex; }
-.suc-banner p { color: var(--income-l); font-size: 13.5px; font-weight: 500; }
-
-/* ═══════════════════════════════════════════════
-   HISTORY PAGE
-═══════════════════════════════════════════════ */
-.hist-pad { padding: 24px 18px 0; }
-.hist-title { font-family: var(--ff-d); font-size: 26px; font-weight: 800; letter-spacing: -.8px; margin-bottom: 16px; }
-.hist-title span { color: var(--purple-ll); }
-
-.srch-wrap { position: relative; margin-bottom: 14px; }
-.srch-wrap svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 17px; height: 17px; stroke: var(--muted); pointer-events: none; }
-.srch-inp {
-  width: 100%; padding: 12px 16px 12px 44px;
-  background: var(--s2); border: 1.5px solid var(--border2); border-radius: var(--r-sm);
-  color: var(--white); font-size: 14px; font-weight: 500;
-  outline: none; transition: border-color .2s;
-  -webkit-appearance: none;
-}
-.srch-inp:focus { border-color: var(--purple); }
-.srch-inp::placeholder { color: var(--muted2); }
-
-.filter-row { display: flex; gap: 7px; overflow-x: auto; padding-bottom: 2px; margin-bottom: 16px; }
-.filter-row::-webkit-scrollbar { display: none; }
-.flt-btn {
-  padding: 7px 16px; border-radius: 99px;
-  border: 1px solid var(--border2); background: transparent;
-  color: var(--muted); white-space: nowrap;
-  font-size: 12.5px; font-weight: 600; transition: all .2s;
-  flex-shrink: 0;
-}
-.flt-btn.on { background: rgba(124,58,237,0.14); border-color: rgba(124,58,237,0.4); color: var(--purple-ll); }
-.flt-btn:not(.on):hover { border-color: var(--border3); color: var(--white); }
-
-/* ═══════════════════════════════════════════════
-   PROFILE PAGE
-═══════════════════════════════════════════════ */
-.prof-pad { padding: 18px; }
-
-.prof-hero-card {
-  border-radius: 26px; padding: 28px;
-  position: relative; overflow: hidden;
-  background: linear-gradient(145deg, #170840 0%, #2d1060 45%, #170840 100%);
-  border: 1px solid rgba(124,58,237,0.28);
-  box-shadow: 0 20px 50px rgba(124,58,237,0.2);
-  text-align: center; margin-bottom: 14px;
-}
-.prof-hero-card::before {
-  content: ''; position: absolute; top: -60px; right: -60px;
-  width: 220px; height: 220px; border-radius: 50%;
-  background: radial-gradient(circle, rgba(124,58,237,0.3) 0%, transparent 70%);
-  pointer-events: none;
-}
-.prof-av {
-  width: 76px; height: 76px; border-radius: 50%;
-  margin: 0 auto 14px;
-  background: linear-gradient(145deg, var(--purple), var(--gold-l));
-  display: flex; align-items: center; justify-content: center;
-  font-family: var(--ff-d); font-weight: 800; font-size: 28px; color: #fff;
-  box-shadow: 0 0 0 3px rgba(124,58,237,0.3), 0 10px 36px rgba(124,58,237,0.45);
-  position: relative; z-index: 1;
-}
-.prof-name { font-family: var(--ff-d); font-size: 22px; font-weight: 800; letter-spacing: -.4px; position: relative; z-index: 1; }
-.prof-email { font-size: 12.5px; color: rgba(200,200,255,0.45); margin: 4px 0 14px; position: relative; z-index: 1; }
-.prof-lv-pill {
-  display: inline-flex; align-items: center; gap: 7px;
-  background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.25);
-  border-radius: 99px; padding: 6px 14px; position: relative; z-index: 1;
-}
-.prof-lv-txt { font-size: 12px; color: var(--gold-ll); font-weight: 700; }
-
-.prof-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
-.ps-card {
-  background: var(--s1); border: 1px solid var(--border); border-radius: 18px;
-  padding: 16px; text-align: center;
-}
-.ps-val {
-  font-family: var(--ff-d); font-size: 26px; font-weight: 800; letter-spacing: -.8px;
-  background: linear-gradient(135deg, var(--purple-ll), var(--white));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-.ps-lbl { font-size: 10.5px; color: var(--muted); margin-top: 3px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
-
-.prof-section { margin-bottom: 14px; }
-.prof-sec-title { font-family: var(--ff-d); font-size: 16px; font-weight: 700; margin-bottom: 12px; letter-spacing: -.3px; }
-
-.badge-list { display: flex; flex-direction: column; gap: 8px; }
-.badge-row {
-  display: flex; align-items: center; gap: 14px;
-  padding: 14px 16px; background: var(--s1);
-  border: 1px solid var(--border); border-radius: 16px; transition: all .15s;
-}
-.badge-row.unlocked { border-color: rgba(124,58,237,0.22); }
-.badge-row.locked { opacity: .35; }
-.badge-ico {
-  width: 44px; height: 44px; border-radius: 13px; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-}
-.badge-ico.u { background: linear-gradient(145deg, var(--purple), var(--purple-l)); }
-.badge-ico.l { background: var(--s3); }
-.badge-info { flex: 1; }
-.badge-name { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
-.badge-desc { font-size: 11.5px; color: var(--muted); }
-.badge-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
-.badge-xp { font-family: var(--ff-d); font-size: 12px; color: var(--gold-l); font-weight: 700; }
-
-.since-box {
-  background: var(--s1); border: 1px solid var(--border); border-radius: 16px;
-  padding: 14px; text-align: center; margin-bottom: 14px;
-}
-.since-box p:first-child { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
-.since-box p:last-child { font-size: 15px; font-weight: 600; }
-
-.signout-btn {
-  width: 100%; padding: 14px; border: 1px solid rgba(244,63,94,0.2);
-  border-radius: var(--r-sm); background: transparent;
-  color: var(--expense-l); font-size: 14px; font-weight: 600;
-  transition: all .2s; display: flex; align-items: center; justify-content: center; gap: 8px;
-}
-.signout-btn:hover { background: rgba(244,63,94,0.07); border-color: rgba(244,63,94,0.38); }
-
-/* ═══════════════════════════════════════════════
-   DESKTOP PAGE INNER WRAPPER
-═══════════════════════════════════════════════ */
-@media (min-width: 768px) {
-  .dash-pad, .log-pad, .hist-pad, .prof-pad,
-  .sec-hd, .stat-grid, .badge-shelf, .tx-list {
-    max-width: 740px; margin-left: auto; margin-right: auto;
-  }
-  .hero-card { margin-left: auto; margin-right: auto; max-width: 740px; }
-  .sec-hd, .stat-grid, .badge-shelf, .tx-list { padding-left: 0; padding-right: 0; }
-  .dash-pad { padding: 28px 28px 0; }
-  .log-pad  { padding: 28px 28px 0; }
-  .hist-pad { padding: 28px 28px 0; }
-  .prof-pad { padding: 28px 28px 0; }
-  .hero-card { margin-bottom: 22px; }
-  #mob-topbar { display: none; }
-}
-
-/* ═══════════════════════════════════════════════
-   XP FLOAT & BADGE TOAST
-═══════════════════════════════════════════════ */
-.xp-float {
-  position: fixed; pointer-events: none; z-index: 9999;
-  font-family: var(--ff-d); font-size: 22px; font-weight: 800;
-  color: var(--gold-ll); text-shadow: 0 0 20px rgba(245,158,11,.85);
-  animation: xpFly 1.6s ease forwards;
-  white-space: nowrap;
-}
-
-#badge-toast {
-  position: fixed; top: 18px; right: 18px; z-index: 9998;
-  background: rgba(13,13,28,0.96); border: 1px solid rgba(245,158,11,.32);
-  border-radius: 18px; padding: 15px 18px;
-  display: flex; align-items: center; gap: 14px;
-  box-shadow: 0 16px 60px rgba(0,0,0,.6), 0 0 30px rgba(245,158,11,.12);
-  max-width: 286px; animation: slideIn .38s ease;
-  transition: opacity .3s, transform .3s;
-}
-#badge-toast.hide { opacity: 0; transform: translateX(16px); }
-.bt-ico {
-  width: 48px; height: 48px; border-radius: 13px; flex-shrink: 0;
-  background: linear-gradient(145deg, var(--purple), var(--gold-l));
-  display: flex; align-items: center; justify-content: center;
-  animation: pop .55s cubic-bezier(.34,1.56,.64,1);
-}
-.bt-tag { font-size: 9.5px; color: var(--gold-l); font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
-.bt-name { font-family: var(--ff-d); font-size: 15px; font-weight: 700; margin-top: 2px; }
-.bt-desc { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
-
-/* ═══════════════════════════════════════════════
-   KEYFRAMES
-═══════════════════════════════════════════════ */
-@keyframes fadeUp  { from { opacity:0; transform:translateY(18px) } to { opacity:1; transform:translateY(0) } }
-@keyframes slideIn { from { opacity:0; transform:translateX(26px) } to { opacity:1; transform:translateX(0) } }
-@keyframes xpFly   { 0%{opacity:0;transform:scale(.5) translateY(0)} 25%{opacity:1;transform:scale(1.2) translateY(-22px)} 80%{opacity:1} 100%{opacity:0;transform:scale(.9) translateY(-65px)} }
-@keyframes pop     { 0%{transform:scale(0) rotate(-10deg)} 70%{transform:scale(1.15) rotate(4deg)} 100%{transform:scale(1) rotate(0)} }
-
-/* ═══════════════════════════════════════════════
-   UTILITY
-═══════════════════════════════════════════════ */
-.mb14 { margin-bottom: 14px; }
-.mt6  { margin-top: 6px; }
-
-/* ═══════════════════════════════════════════════
-   PWA INSTALL BANNER
-═══════════════════════════════════════════════ */
-#pwa-banner {
-  position: fixed; bottom: calc(var(--bnav-h) + 12px); left: 12px; right: 12px;
-  z-index: 9990;
-  background: linear-gradient(135deg, #1a0a3d, #2d1060);
-  border: 1px solid rgba(124,58,237,0.45);
-  border-radius: 18px;
-  padding: 14px 16px;
-  display: flex; align-items: center; gap: 13px;
-  box-shadow: 0 12px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05);
-  animation: slideUp .4s cubic-bezier(.34,1.56,.64,1) both;
-}
-@media (min-width: 768px) {
-  #pwa-banner {
-    bottom: 20px; left: auto; right: 20px;
-    width: 340px;
-  }
-}
-#pwa-banner.hide {
-  animation: slideDown .3s ease forwards;
-}
-.pwa-icon {
-  width: 46px; height: 46px; border-radius: 13px; flex-shrink: 0;
-  background: linear-gradient(145deg, var(--purple), var(--purple-l));
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 6px 18px rgba(124,58,237,0.5);
-}
-.pwa-text { flex: 1; }
-.pwa-title { font-family: var(--ff-d); font-size: 14px; font-weight: 700; color: var(--white); }
-.pwa-sub   { font-size: 11.5px; color: rgba(200,200,255,0.55); margin-top: 2px; }
-.pwa-actions { display: flex; gap: 8px; flex-shrink: 0; }
-.pwa-install-btn {
-  padding: 8px 14px; border: none; border-radius: 10px;
-  background: linear-gradient(135deg, var(--purple), var(--purple-l));
-  color: #fff; font-family: var(--ff-d); font-size: 12px; font-weight: 700;
-  cursor: pointer; transition: all .2s; white-space: nowrap;
-  box-shadow: 0 4px 14px rgba(124,58,237,0.4);
-}
-.pwa-install-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(124,58,237,0.55); }
-.pwa-dismiss-btn {
-  padding: 8px 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px;
-  background: transparent; color: var(--muted);
-  font-size: 12px; font-weight: 600; cursor: pointer; transition: all .2s;
-}
-.pwa-dismiss-btn:hover { border-color: rgba(255,255,255,0.2); color: var(--white); }
-
-/* PWA OFFLINE BADGE */
-#offline-badge {
-  position: fixed; top: 70px; left: 50%; transform: translateX(-50%);
-  z-index: 9995; display: none;
-  background: rgba(244,63,94,0.12); border: 1px solid rgba(244,63,94,0.3);
-  border-radius: 99px; padding: 6px 16px;
-  font-size: 12px; font-weight: 600; color: var(--expense-l);
-  white-space: nowrap;
-}
-#offline-badge.show { display: block; animation: fadeUp .3s ease; }
-
-/* PWA SPLASH (shown on standalone launch before fonts load) */
-@media (display-mode: standalone) {
-  #mob-topbar { padding-top: env(safe-area-inset-top, 0px); height: calc(var(--topbar-h) + env(safe-area-inset-top, 0px)); }
-  #mob-bnav   { padding-bottom: calc(8px + env(safe-area-inset-bottom, 16px)); }
-}
-
-@keyframes slideUp   { from { opacity:0; transform:translateY(30px) } to { opacity:1; transform:translateY(0) } }
-@keyframes slideDown { from { opacity:1; transform:translateY(0) } to { opacity:0; transform:translateY(20px) } }
-</style>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="theme-color" content="#000000"/>
+    <meta name="mobile-web-app-capable" content="yes"/>
+    <meta name="apple-mobile-web-app-capable" content="yes"/>
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+    <title>FinsCope — Financial Fitness</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+	<script src="script.js" defer></script>
+    <!-- Styles -->
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<!-- ═══════════ AUTH SCREEN ═══════════ -->
-<div id="auth-screen">
-  <div class="auth-box">
-    <div class="auth-brand">
-      <div class="auth-logo-wrap">
-        <svg width="28" height="28" viewBox="0 0 24 24" stroke="#fff">
-          <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
-          <polyline points="17 6 23 6 23 12"/>
-        </svg>
-      </div>
-      <div class="auth-title">StackUp</div>
-      <div class="auth-sub">Build wealth. Level up. Hustle smart.</div>
-    </div>
-
-    <div class="auth-toggle">
-      <button class="auth-tab on" onclick="switchAuth('login')">Sign In</button>
-      <button class="auth-tab" onclick="switchAuth('register')">Create Account</button>
-    </div>
-
-    <div class="auth-card">
-      <div id="field-name" class="field" style="display:none">
-        <label>Full Name</label>
-        <input id="inp-name" type="text" placeholder="Your full name" autocomplete="name"/>
-      </div>
-      <div class="field">
-        <label>Email Address</label>
-        <input id="inp-email" type="email" placeholder="you@email.com" autocomplete="email"/>
-      </div>
-      <div class="field" style="margin-bottom:20px">
-        <label>Password</label>
-        <input id="inp-pass" type="password" placeholder="••••••••" autocomplete="current-password"
-          onkeydown="if(event.key==='Enter')doAuth()"/>
-      </div>
-      <p id="auth-err" class="auth-err"></p>
-      <button class="btn-primary" onclick="doAuth()">Sign In &rarr;</button>
-    </div>
-    <p class="auth-footer">For students &amp; side hustlers &mdash; 100% free</p>
-  </div>
-</div>
-
-<!-- ═══════════ APP ═══════════ -->
-<div id="app">
-
-  <!-- SIDEBAR (desktop) -->
-  <nav id="sidebar">
-    <div class="sb-brand">
-      <div class="sb-brand-icon">
-        <svg width="18" height="18" viewBox="0 0 24 24" stroke="#fff">
-          <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
-          <polyline points="17 6 23 6 23 12"/>
-        </svg>
-      </div>
-      <span class="sb-brand-name">StackUp</span>
-    </div>
-
-    <button class="sb-nav-item on" onclick="go('dash')" id="sn-dash">
-      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
-      Home
-    </button>
-    <button class="sb-nav-item" onclick="go('log')" id="sn-log">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-      Log Transaction
-    </button>
-    <button class="sb-nav-item" onclick="go('hist')" id="sn-hist">
-      <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.89"/></svg>
-      History
-    </button>
-    <button class="sb-nav-item" onclick="go('prof')" id="sn-prof">
-      <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-      Profile
-    </button>
-
-    <div class="sb-spacer"></div>
-
-    <div class="sb-xp-card">
-      <div class="sb-xp-top">
-        <div class="sb-lv-badge">
-          <div class="sb-lv-dot" id="sb-lv">1</div>
-          <span class="sb-lv-label" id="sb-lv-lbl">Level 1</span>
-        </div>
-        <span class="sb-xp-num" id="sb-xp">0 XP</span>
-      </div>
-      <div class="sb-bar"><div class="sb-fill" id="sb-fill" style="width:0%"></div></div>
-    </div>
-  </nav>
-
-  <!-- MAIN -->
-  <div id="main-content">
-
-    <!-- MOBILE TOPBAR -->
-    <header id="mob-topbar">
-      <span class="mob-logo">StackUp</span>
-      <div class="mob-topbar-right">
-        <span class="xp-label" id="mob-xp">0 XP</span>
-        <div class="lv-pill">
-          <div class="lv-badge" id="mob-lv">1</div>
-          <span class="lv-text" id="mob-lv-txt">Level 1</span>
-        </div>
-      </div>
-    </header>
-
-    <!-- ── DASHBOARD ── -->
-    <div id="p-dash" class="page on">
-      <div class="dash-pad">
-        <!-- Hero -->
-        <div class="hero-card">
-          <div class="hero-top">
-            <div class="hero-greet">
-              <p>Good to see you,</p>
-              <h2 id="d-name">—</h2>
+    <!-- ===== AUTH ===== -->
+    <div id="auth">
+        <div class="auth-box">
+            <div class="auth-brand">
+                <div class="auth-logo">
+                    <svg width="24" height="24" viewBox="0 0 24 24" stroke="#fff">
+                        <polyline points="22 7 13 16 8 11 2 17"/>
+                        <polyline points="16 7 22 7 22 13"/>
+                    </svg>
+                </div>
+                <div class="auth-title">FinsCope</div>
+                <div class="auth-sub">Track money. Train body. Level up.</div>
             </div>
-            <div class="streak-chip">
-              <div class="streak-num" id="d-streak">0</div>
-              <div class="streak-lbl">Day Streak</div>
+            <div class="auth-tabs">
+                <button class="a-tab on" data-auth-mode="login">Sign In</button>
+                <button class="a-tab" data-auth-mode="register">Create Account</button>
             </div>
-          </div>
-
-          <div class="donut-row">
-            <div class="donut-wrap">
-              <svg id="donut-svg" width="126" height="126" viewBox="0 0 126 126" style="transform:rotate(-90deg)">
-                <circle cx="63" cy="63" r="48" stroke="rgba(255,255,255,0.06)" stroke-width="15" fill="none"/>
-                <circle id="arc-inc" cx="63" cy="63" r="48" stroke="#10b981" stroke-width="15" fill="none" stroke-dasharray="0 301.6" stroke-linecap="butt"/>
-                <circle id="arc-exp" cx="63" cy="63" r="48" stroke="#f43f5e" stroke-width="15" fill="none" stroke-dasharray="0 301.6" stroke-linecap="butt"/>
-                <circle id="arc-sav" cx="63" cy="63" r="48" stroke="#06b6d4" stroke-width="15" fill="none" stroke-dasharray="0 301.6" stroke-linecap="butt"/>
-                <circle id="arc-inv" cx="63" cy="63" r="48" stroke="#d97706" stroke-width="15" fill="none" stroke-dasharray="0 301.6" stroke-linecap="butt"/>
-              </svg>
-              <div class="donut-center">
-                <div class="donut-c-label">Net Flow</div>
-                <div class="donut-c-amt" id="d-net">&#8369;0</div>
-                <div class="donut-c-sub" id="d-net-sub">&mdash;</div>
-              </div>
+            <div class="auth-card">
+                <div class="fld" id="fn-field" style="display: none;">
+                    <label>Full Name</label>
+                    <input id="auth-name" type="text" placeholder="Your full name" autocomplete="name"/>
+                </div>
+                <div class="fld">
+                    <label>Email Address</label>
+                    <input id="auth-email" type="email" placeholder="you@email.com" autocomplete="email"/>
+                </div>
+                <div class="fld" style="margin-bottom: 17px;">
+                    <label>Password</label>
+                    <input id="auth-password" type="password" placeholder="••••••••" autocomplete="current-password"/>
+                </div>
+                <p id="auth-error" class="auth-err"></p>
+                <button class="btn-prime" id="auth-action">Sign In →</button>
             </div>
-            <div class="legend">
-              <div class="legend-item"><div class="legend-dot" style="background:var(--income)"></div><div><div class="legend-name">Income</div><div class="legend-val" id="d-inc">&#8369;0</div></div></div>
-              <div class="legend-item"><div class="legend-dot" style="background:var(--expense)"></div><div><div class="legend-name">Expenses</div><div class="legend-val" id="d-exp">&#8369;0</div></div></div>
-              <div class="legend-item"><div class="legend-dot" style="background:var(--saving)"></div><div><div class="legend-name">Savings</div><div class="legend-val" id="d-sav">&#8369;0</div></div></div>
-              <div class="legend-item"><div class="legend-dot" style="background:var(--invest)"></div><div><div class="legend-name">Invested</div><div class="legend-val" id="d-inv">&#8369;0</div></div></div>
+            <p style="text-align: center; color: var(--muted); font-size: 11.5px; margin-top: 13px;">
+                Your journey to financial and physical freedom starts here.
+            </p>
+        </div>
+    </div>
+
+    <!-- ===== APP ===== -->
+    <div id="app">
+        <!-- DESKTOP SIDEBAR -->
+        <nav id="sidebar">
+            <div class="sb-brand">
+                <div class="sb-logo-ico">
+                    <svg width="15" height="15" viewBox="0 0 24 24" stroke="#fff">
+                        <polyline points="22 7 13 16 8 11 2 17"/>
+                        <polyline points="16 7 22 7 22 13"/>
+                    </svg>
+                </div>
+                <span class="sb-name">FinsCope</span>
             </div>
-          </div>
-
-          <div class="hero-xp">
-            <div class="hero-xp-row">
-              <span class="hero-xp-lv" id="d-lv-txt">Level 1</span>
-              <span class="hero-xp-txt" id="d-xp-txt">0 / 100 XP</span>
+            <div class="sb-sec">Overview</div>
+            <button class="sb-item on" data-page="dash" id="sn-dash">
+                <svg viewBox="0 0 24 24">
+                    <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+                    <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+                    <rect x="14" y="14" width="7" height="7" rx="1.5"/>
+                    <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+                </svg>
+                Dashboard
+            </button>
+            <button class="sb-item" data-page="quests" id="sn-quests">
+                <svg viewBox="0 0 24 24">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                </svg>
+                Quests
+            </button>
+            <div class="sb-sec">Track</div>
+            <button class="sb-item" data-page="money" id="sn-money">
+                <svg viewBox="0 0 24 24">
+                    <line x1="12" y1="1" x2="12" y2="23"/>
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                </svg>
+                Money
+            </button>
+            <button class="sb-item" data-page="fitness" id="sn-fitness">
+                <svg viewBox="0 0 24 24">
+                    <path d="M18 8h1a4 4 0 0 1 0 8h-1"/>
+                    <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/>
+                    <line x1="6" y1="1" x2="6" y2="4"/>
+                    <line x1="10" y1="1" x2="10" y2="4"/>
+                    <line x1="14" y1="1" x2="14" y2="4"/>
+                </svg>
+                Fitness
+            </button>
+            <button class="sb-item" data-page="prof" id="sn-prof">
+                <svg viewBox="0 0 24 24">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                </svg>
+                Profile
+            </button>
+            <div class="sb-spacer"></div>
+            <div class="sb-widget">
+                <div class="sb-wt">
+                    <div class="sb-lv-row">
+                        <div class="sb-lv-ball" id="sb-lv">1</div>
+                        <span class="sb-lv-name" id="sb-lv-n">Level 1</span>
+                    </div>
+                    <span class="sb-xp-val" id="sb-xp">0 XP</span>
+                </div>
+                <div class="sb-bar">
+                    <div class="sb-fill" id="sb-fill" style="width: 0%;"></div>
+                </div>
+                <div class="sb-disc">
+                    <span class="sb-disc-lbl">Discipline Score</span>
+                    <span class="sb-disc-val" id="sb-disc">0</span>
+                </div>
             </div>
-            <div class="hero-bar"><div class="hero-fill" id="d-xp-bar" style="width:0%"></div></div>
-          </div>
-        </div>
-      </div>
+        </nav>
 
-      <!-- Stats -->
-      <div class="sec-hd"><span class="sec-title">Overview</span></div>
-      <div class="stat-grid" style="padding:0 18px">
-        <div class="stat-card">
-          <div class="stat-accent" style="background:var(--income)"></div>
-          <div class="stat-ico" style="background:rgba(16,185,129,.1)">
-            <svg width="17" height="17" viewBox="0 0 24 24" stroke="var(--income)"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 5 5 12"/></svg>
-          </div>
-          <div class="stat-lbl">Income</div>
-          <div class="stat-val" style="color:var(--income-l)" id="s-inc">&#8369;0</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-accent" style="background:var(--expense)"></div>
-          <div class="stat-ico" style="background:rgba(244,63,94,.1)">
-            <svg width="17" height="17" viewBox="0 0 24 24" stroke="var(--expense)"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="5 12 12 19 19 12"/></svg>
-          </div>
-          <div class="stat-lbl">Expenses</div>
-          <div class="stat-val" style="color:var(--expense-l)" id="s-exp">&#8369;0</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-accent" style="background:var(--saving)"></div>
-          <div class="stat-ico" style="background:rgba(6,182,212,.1)">
-            <svg width="17" height="17" viewBox="0 0 24 24" stroke="var(--saving)"><rect x="3" y="10" width="18" height="11" rx="2"/><path d="M7 10V7a5 5 0 0 1 10 0v3"/></svg>
-          </div>
-          <div class="stat-lbl">Savings</div>
-          <div class="stat-val" style="color:var(--saving-l)" id="s-sav">&#8369;0</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-accent" style="background:var(--invest)"></div>
-          <div class="stat-ico" style="background:rgba(217,119,6,.1)">
-            <svg width="17" height="17" viewBox="0 0 24 24" stroke="var(--invest)"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
-          </div>
-          <div class="stat-lbl">Invested</div>
-          <div class="stat-val" style="color:var(--invest-l)" id="s-inv">&#8369;0</div>
-        </div>
-      </div>
+        <!-- MAIN CONTENT -->
+        <div id="main">
+            <!-- MOBILE TOP BAR -->
+            <header id="mob-top">
+                <span class="mob-logo">FinsCope</span>
+                <div class="mob-right">
+                    <span style="font-size: 11px; color: var(--muted);" id="m-xp">0 XP</span>
+                    <div class="lv-chip">
+                        <div class="lv-dot" id="m-lv">1</div>
+                        <span class="lv-txt" id="m-lv-t">Lv 1</span>
+                    </div>
+                </div>
+            </header>
 
-      <!-- Badges -->
-      <div id="d-bdg-wrap" style="display:none">
-        <div class="sec-hd"><span class="sec-title">Achievements</span></div>
-        <div class="badge-shelf" id="d-bdg"></div>
-      </div>
+            <!-- MONTH STRIP (MOBILE) -->
+            <div id="month-strip"></div>
 
-      <!-- Recent -->
-      <div class="sec-hd"><span class="sec-title">Recent Activity</span></div>
-      <div id="d-recent" class="mb14"></div>
+            <!-- DASHBOARD PAGE -->
+            <div id="p-dash" class="page on">
+                <div class="pp">
+                    <!-- DESKTOP MONTH STRIP -->
+                    <div class="desk-mon" id="desk-mon" style="display: none;"></div>
+
+                    <!-- PLAYER CARD -->
+                    <div class="player-card">
+                        <div class="pc-top">
+                            <div class="pc-id">
+                                <p>Player Profile</p>
+                                <h2 id="d-name">—</h2>
+                            </div>
+                            <div class="pc-rank">
+                                <div class="pc-rank-t" id="d-rank">Rookie</div>
+                                <div class="pc-rank-l">Rank</div>
+                            </div>
+                        </div>
+                        <div class="pc-body">
+                            <div class="disc-ring">
+                                <svg width="96" height="96" viewBox="0 0 96 96" style="transform: rotate(-90deg);">
+                                    <circle cx="48" cy="48" r="38" stroke="rgba(255,255,255,0.06)" stroke-width="10" fill="none"/>
+                                    <circle id="disc-arc" cx="48" cy="48" r="38" stroke="url(#dg)" stroke-width="10" fill="none" stroke-dasharray="0 238.8" stroke-linecap="round"/>
+                                    <defs>
+                                        <linearGradient id="dg" x1="0%" y1="0%" x2="100%" y2="0%">
+                                            <stop offset="0%" stop-color="#7c3aed"/>
+                                            <stop offset="100%" stop-color="#f59e0b"/>
+                                        </linearGradient>
+                                    </defs>
+                                </svg>
+                                <div class="disc-center">
+                                    <div class="disc-num" id="d-disc">0</div>
+                                    <div class="disc-lbl">Score</div>
+                                </div>
+                            </div>
+                            <div class="pc-metrics">
+                                <div class="met-row">
+                                    <div class="met-dot" style="background: var(--income-l);"></div>
+                                    <div class="met-info">
+                                        <div class="met-name">Net Flow</div>
+                                        <div class="met-val" id="d-net">₱0</div>
+                                    </div>
+                                    <div class="met-bar">
+                                        <div class="met-bar-fill" id="mb-net" style="width: 0%; background: var(--income-l);"></div>
+                                    </div>
+                                </div>
+                                <div class="met-row">
+                                    <div class="met-dot" style="background: var(--fit-ll);"></div>
+                                    <div class="met-info">
+                                        <div class="met-name">Workouts this week</div>
+                                        <div class="met-val" id="d-woc">0 sessions</div>
+                                    </div>
+                                    <div class="met-bar">
+                                        <div class="met-bar-fill" id="mb-wo" style="width: 0%; background: var(--fit-ll);"></div>
+                                    </div>
+                                </div>
+                                <div class="met-row">
+                                    <div class="met-dot" style="background: var(--gold-ll);"></div>
+                                    <div class="met-info">
+                                        <div class="met-name">Day Streak</div>
+                                        <div class="met-val" id="d-str">0 days</div>
+                                    </div>
+                                    <div class="met-bar">
+                                        <div class="met-bar-fill" id="mb-str" style="width: 0%; background: var(--gold-ll);"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="pc-xp">
+                            <div class="pc-xp-row">
+                                <span class="pc-xp-lv" id="d-lv-t">Level 1 — Rookie</span>
+                                <span class="pc-xp-num" id="d-xp-t">0/100 XP</span>
+                            </div>
+                            <div class="pc-bar">
+                                <div class="pc-fill" id="d-xp-bar" style="width: 0%;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CHARTS -->
+                    <div class="charts-grid">
+                        <div class="gc chart-card">
+                            <div class="ct">Monthly Overview</div>
+                            <div class="cs" id="chart-sub">Income vs Expenses</div>
+                            <canvas id="bar-chart" height="140"></canvas>
+                        </div>
+                        <div class="gc chart-card">
+                            <div class="ct">Money Ratio</div>
+                            <div class="cs" id="ratio-sub">Income breakdown</div>
+                            <div class="donut-row">
+                                <div class="donut-wrap">
+                                    <svg width="96" height="96" viewBox="0 0 96 96" style="transform: rotate(-90deg);">
+                                        <circle cx="48" cy="48" r="36" stroke="rgba(255,255,255,0.05)" stroke-width="12" fill="none"/>
+                                        <circle id="mr-inc" cx="48" cy="48" r="36" stroke="#10b981" stroke-width="12" fill="none" stroke-dasharray="0 226.2" stroke-linecap="butt"/>
+                                        <circle id="mr-exp" cx="48" cy="48" r="36" stroke="#f43f5e" stroke-width="12" fill="none" stroke-dasharray="0 226.2" stroke-linecap="butt"/>
+                                        <circle id="mr-sav" cx="48" cy="48" r="36" stroke="#06b6d4" stroke-width="12" fill="none" stroke-dasharray="0 226.2" stroke-linecap="butt"/>
+                                        <circle id="mr-inv" cx="48" cy="48" r="36" stroke="#f59e0b" stroke-width="12" fill="none" stroke-dasharray="0 226.2" stroke-linecap="butt"/>
+                                    </svg>
+                                    <div class="donut-inner">
+                                        <div class="di-num" id="mr-pct">0%</div>
+                                        <div class="di-lbl">saved</div>
+                                    </div>
+                                </div>
+                                <div class="dl">
+                                    <div class="dl-row">
+                                        <div class="dl-dot" style="background: var(--income-l);"></div>
+                                        <span class="dl-nm">Income</span>
+                                        <span class="dl-v" id="dl-inc">₱0</span>
+                                    </div>
+                                    <div class="dl-row">
+                                        <div class="dl-dot" style="background: var(--expense-l);"></div>
+                                        <span class="dl-nm">Expense</span>
+                                        <span class="dl-v" id="dl-exp">₱0</span>
+                                    </div>
+                                    <div class="dl-row">
+                                        <div class="dl-dot" style="background: var(--saving-l);"></div>
+                                        <span class="dl-nm">Saving</span>
+                                        <span class="dl-v" id="dl-sav">₱0</span>
+                                    </div>
+                                    <div class="dl-row">
+                                        <div class="dl-dot" style="background: var(--invest-l);"></div>
+                                        <span class="dl-nm">Invest</span>
+                                        <span class="dl-v" id="dl-inv">₱0</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="gc chart-card">
+                            <div class="ct">Weekly Fitness</div>
+                            <div class="cs" id="wo-sub">This week's progress</div>
+                            <div class="donut-row">
+                                <div class="donut-wrap">
+                                    <svg width="96" height="96" viewBox="0 0 96 96" style="transform: rotate(-90deg);">
+                                        <circle cx="48" cy="48" r="36" stroke="rgba(255,255,255,0.05)" stroke-width="12" fill="none"/>
+                                        <circle id="wo-arc" cx="48" cy="48" r="36" stroke="url(#fg)" stroke-width="12" fill="none" stroke-dasharray="0 226.2" stroke-linecap="round"/>
+                                        <defs>
+                                            <linearGradient id="fg" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                <stop offset="0%" stop-color="#7c3aed"/>
+                                                <stop offset="100%" stop-color="#c084fc"/>
+                                            </linearGradient>
+                                        </defs>
+                                    </svg>
+                                    <div class="donut-inner">
+                                        <div class="di-num" id="wo-pct">0%</div>
+                                        <div class="di-lbl">done</div>
+                                    </div>
+                                </div>
+                                <div class="dl">
+                                    <div class="dl-row">
+                                        <div class="dl-dot" style="background: var(--fit-ll);"></div>
+                                        <span class="dl-nm">Sessions</span>
+                                        <span class="dl-v" id="wo-sess">0</span>
+                                    </div>
+                                    <div class="dl-row">
+                                        <div class="dl-dot" style="background: var(--gold-l);"></div>
+                                        <span class="dl-nm">Minutes</span>
+                                        <span class="dl-v" id="wo-mins">0</span>
+                                    </div>
+                                    <div class="dl-row">
+                                        <div class="dl-dot" style="background: var(--income-l);"></div>
+                                        <span class="dl-nm">XP earned</span>
+                                        <span class="dl-v" id="wo-xpe">0</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- QUICK STATS -->
+                    <div class="g4" style="margin-bottom: 14px;">
+                        <div class="sc">
+                            <div class="sc-acc" style="background: var(--income-l);"></div>
+                            <div class="sc-ico" style="background: rgba(16,185,129,0.1);">
+                                <svg width="14" height="14" viewBox="0 0 24 24" stroke="var(--income-l)">
+                                    <line x1="12" y1="5" x2="12" y2="19"/>
+                                    <polyline points="19 12 12 5 5 12"/>
+                                </svg>
+                            </div>
+                            <div class="sc-lbl">Income</div>
+                            <div class="sc-val" style="color: var(--income-ll);" id="qs-inc">₱0</div>
+                        </div>
+                        <div class="sc">
+                            <div class="sc-acc" style="background: var(--expense-l);"></div>
+                            <div class="sc-ico" style="background: rgba(244,63,94,0.1);">
+                                <svg width="14" height="14" viewBox="0 0 24 24" stroke="var(--expense-l)">
+                                    <line x1="12" y1="5" x2="12" y2="19"/>
+                                    <polyline points="5 12 12 19 19 12"/>
+                                </svg>
+                            </div>
+                            <div class="sc-lbl">Expenses</div>
+                            <div class="sc-val" style="color: var(--expense-ll);" id="qs-exp">₱0</div>
+                        </div>
+                        <div class="sc">
+                            <div class="sc-acc" style="background: var(--saving-l);"></div>
+                            <div class="sc-ico" style="background: rgba(6,182,212,0.1);">
+                                <svg width="14" height="14" viewBox="0 0 24 24" stroke="var(--saving-l)">
+                                    <rect x="3" y="10" width="18" height="11" rx="2"/>
+                                    <path d="M7 10V7a5 5 0 0 1 10 0v3"/>
+                                </svg>
+                            </div>
+                            <div class="sc-lbl">Savings</div>
+                            <div class="sc-val" style="color: var(--saving-ll);" id="qs-sav">₱0</div>
+                        </div>
+                        <div class="sc">
+                            <div class="sc-acc" style="background: var(--fit-ll);"></div>
+                            <div class="sc-ico" style="background: rgba(124,58,237,0.1);">
+                                <svg width="14" height="14" viewBox="0 0 24 24" stroke="var(--fit-ll)">
+                                    <path d="M18 8h1a4 4 0 0 1 0 8h-1"/>
+                                    <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/>
+                                    <line x1="6" y1="1" x2="6" y2="4"/>
+                                </svg>
+                            </div>
+                            <div class="sc-lbl">Workouts</div>
+                            <div class="sc-val" style="color: var(--fit-ll);" id="qs-wo">0</div>
+                        </div>
+                    </div>
+
+                    <!-- ACTIVITY + QUESTS -->
+                    <div class="g2" style="gap: 12px; margin-bottom: 14px;">
+                        <div class="gc" style="padding: 14px;">
+                            <div class="sh">
+                                <span class="sh-title">14-Day Activity</span>
+                            </div>
+                            <div style="display: flex; gap: 5px; margin-bottom: 8px; flex-wrap: wrap;">
+                                <span style="font-size: 9px; color: var(--muted); display: flex; align-items: center; gap: 3px;">
+                                    <span style="width: 9px; height: 9px; border-radius: 3px; background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.4); display: inline-block;"></span>
+                                    Money
+                                </span>
+                                <span style="font-size: 9px; color: var(--muted); display: flex; align-items: center; gap: 3px;">
+                                    <span style="width: 9px; height: 9px; border-radius: 3px; background: rgba(124,58,237,0.15); border: 1px solid rgba(124,58,237,0.4); display: inline-block;"></span>
+                                    Fitness
+                                </span>
+                                <span style="font-size: 9px; color: var(--muted); display: flex; align-items: center; gap: 3px;">
+                                    <span style="width: 9px; height: 9px; border-radius: 3px; background: rgba(252,211,77,0.1); border: 1px solid rgba(252,211,77,0.5); display: inline-block;"></span>
+                                    Both
+                                </span>
+                            </div>
+                            <div class="heatmap" id="heatmap"></div>
+                        </div>
+                        <div class="gc" style="padding: 14px;">
+                            <div class="sh">
+                                <span class="sh-title">Today's Quests</span>
+                            </div>
+                            <div id="today-quests"></div>
+                        </div>
+                    </div>
+
+                    <!-- RECENT ACTIVITY -->
+                    <div class="gc" style="padding: 14px; margin-bottom: 14px;">
+                        <div class="sh">
+                            <span class="sh-title">Recent Activity</span>
+                            <button class="sh-link" data-page="money">View all</button>
+                        </div>
+                        <div id="d-recent" style="display: flex; flex-direction: column; gap: 8px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MONEY PAGE -->
+            <div id="p-money" class="page">
+                <div class="pp">
+                    <div style="margin-bottom: 18px;">
+                        <h2 style="font-family: var(--ff-d); font-size: 22px; font-weight: 800; letter-spacing: -0.7px; margin-bottom: 3px;">
+                            Money <span style="color: var(--income-ll);">Tracker</span>
+                        </h2>
+                        <p style="color: var(--muted); font-size: 12.5px;">Every peso logged is a win.</p>
+                    </div>
+                    <div class="gc" style="padding: 16px; margin-bottom: 13px;">
+                        <div class="sh">
+                            <span class="sh-title">Log Transaction</span>
+                        </div>
+                        <div class="type-grid">
+                            <button class="type-btn" data-money-type="income" id="mt-income">
+                                <svg viewBox="0 0 24 24">
+                                    <line x1="12" y1="5" x2="12" y2="19"/>
+                                    <polyline points="19 12 12 5 5 12"/>
+                                </svg>
+                                <span class="type-lbl">Income</span>
+                            </button>
+                            <button class="type-btn" data-money-type="expense" id="mt-expense">
+                                <svg viewBox="0 0 24 24">
+                                    <line x1="12" y1="5" x2="12" y2="19"/>
+                                    <polyline points="5 12 12 19 19 12"/>
+                                </svg>
+                                <span class="type-lbl">Expense</span>
+                            </button>
+                            <button class="type-btn" data-money-type="saving" id="mt-saving">
+                                <svg viewBox="0 0 24 24">
+                                    <rect x="3" y="10" width="18" height="11" rx="2"/>
+                                    <path d="M7 10V7a5 5 0 0 1 10 0v3"/>
+                                </svg>
+                                <span class="type-lbl">Save</span>
+                            </button>
+                            <button class="type-btn" data-money-type="investment" id="mt-investment">
+                                <svg viewBox="0 0 24 24">
+                                    <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
+                                    <polyline points="16 7 22 7 22 13"/>
+                                </svg>
+                                <span class="type-lbl">Invest</span>
+                            </button>
+                        </div>
+                        <div class="amt-blk">
+                            <span class="amt-sign">₱</span>
+                            <input class="amt-inp" id="m-amt" type="number" placeholder="0.00" min="0" step="0.01" inputmode="decimal"/>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 9px;">
+                            <div>
+                                <label class="form-lbl">Category</label>
+                                <select class="fc" id="m-cat"></select>
+                            </div>
+                            <div>
+                                <label class="form-lbl">Date</label>
+                                <input class="fc" id="m-date" type="date"/>
+                            </div>
+                        </div>
+                        <div style="margin-bottom: 14px;">
+                            <label class="form-lbl">Note (optional)</label>
+                            <input class="fc" id="m-note" type="text" placeholder="e.g. Grab food, Lazada order…"/>
+                        </div>
+                        <button class="btn-prime" id="money-log-btn">Log Transaction →</button>
+                        <div id="m-suc" class="suc-ban suc-money">
+                            <svg width="17" height="17" viewBox="0 0 24 24" stroke="var(--income-l)">
+                                <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                            Transaction logged! +20 XP
+                        </div>
+                    </div>
+                    <div class="g2" style="margin-bottom: 13px;">
+                        <div class="sc">
+                            <div class="sc-acc" style="background: var(--income-l);"></div>
+                            <div class="sc-lbl">Month Income</div>
+                            <div class="sc-val" style="color: var(--income-ll);" id="ms-inc">₱0</div>
+                        </div>
+                        <div class="sc">
+                            <div class="sc-acc" style="background: var(--expense-l);"></div>
+                            <div class="sc-lbl">Month Expenses</div>
+                            <div class="sc-val" style="color: var(--expense-ll);" id="ms-exp">₱0</div>
+                        </div>
+                        <div class="sc">
+                            <div class="sc-acc" style="background: var(--saving-l);"></div>
+                            <div class="sc-lbl">Total Savings</div>
+                            <div class="sc-val" style="color: var(--saving-ll);" id="ms-sav">₱0</div>
+                        </div>
+                        <div class="sc">
+                            <div class="sc-acc" style="background: var(--invest-l);"></div>
+                            <div class="sc-lbl">Total Invested</div>
+                            <div class="sc-val" style="color: var(--invest-l);" id="ms-inv">₱0</div>
+                        </div>
+                    </div>
+                    <div class="gc" style="padding: 14px; margin-bottom: 13px;">
+                        <div class="sh">
+                            <span class="sh-title">History</span>
+                            <div style="display: flex; gap: 6px;">
+                                <button class="money-filter" data-filter="all" style="font-size: 11px; font-weight: 600; background: none; border: none; cursor: pointer; color: var(--white);">All</button>
+                                <button class="money-filter" data-filter="income" style="font-size: 11px; font-weight: 600; background: none; border: none; cursor: pointer; color: var(--muted);">Income</button>
+                                <button class="money-filter" data-filter="expense" style="font-size: 11px; font-weight: 600; background: none; border: none; cursor: pointer; color: var(--muted);">Expense</button>
+                                <button class="money-filter" data-filter="saving" style="font-size: 11px; font-weight: 600; background: none; border: none; cursor: pointer; color: var(--muted);">Saving</button>
+                            </div>
+                        </div>
+                        <div id="m-hist" style="display: flex; flex-direction: column; gap: 8px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FITNESS PAGE -->
+            <div id="p-fitness" class="page">
+                <div class="pp">
+                    <div style="margin-bottom: 18px;">
+                        <h2 style="font-family: var(--ff-d); font-size: 22px; font-weight: 800; letter-spacing: -0.7px; margin-bottom: 3px;">
+                            Fitness <span style="color: var(--fit-ll);">Tracker</span>
+                        </h2>
+                        <p style="color: var(--muted); font-size: 12.5px;">Train hard. Log it. Level up.</p>
+                    </div>
+                    <div class="gc" style="padding: 16px; margin-bottom: 13px;">
+                        <div class="sh">
+                            <span class="sh-title">Log Workout</span>
+                        </div>
+                        <div class="ft-grid">
+                            <button class="ft-btn" data-fitness-type="strength" id="ft-strength">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M18 8h1a4 4 0 0 1 0 8h-1"/>
+                                    <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/>
+                                    <line x1="6" y1="1" x2="6" y2="4"/>
+                                    <line x1="10" y1="1" x2="10" y2="4"/>
+                                    <line x1="14" y1="1" x2="14" y2="4"/>
+                                </svg>
+                                <span class="ft-lbl">Strength</span>
+                            </button>
+                            <button class="ft-btn" data-fitness-type="cardio" id="ft-cardio">
+                                <svg viewBox="0 0 24 24">
+                                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                                </svg>
+                                <span class="ft-lbl">Cardio</span>
+                            </button>
+                            <button class="ft-btn" data-fitness-type="hiit" id="ft-hiit">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                                </svg>
+                                <span class="ft-lbl">HIIT</span>
+                            </button>
+                            <button class="ft-btn" data-fitness-type="flexibility" id="ft-flexibility">
+                                <svg viewBox="0 0 24 24">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+                                    <line x1="9" y1="9" x2="9.01" y2="9"/>
+                                    <line x1="15" y1="9" x2="15.01" y2="9"/>
+                                </svg>
+                                <span class="ft-lbl">Stretch</span>
+                            </button>
+                            <button class="ft-btn" data-fitness-type="sports" id="ft-sports">
+                                <svg viewBox="0 0 24 24">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <circle cx="12" cy="12" r="4"/>
+                                    <line x1="4.93" y1="4.93" x2="9.17" y2="9.17"/>
+                                    <line x1="14.83" y1="14.83" x2="19.07" y2="19.07"/>
+                                </svg>
+                                <span class="ft-lbl">Sports</span>
+                            </button>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 9px;">
+                            <div>
+                                <label class="form-lbl">Exercise Name</label>
+                                <input class="fc" id="f-name" type="text" placeholder="e.g. Bench Press, 5k Run…"/>
+                            </div>
+                            <div>
+                                <label class="form-lbl">Duration (mins)</label>
+                                <input class="fc" id="f-dur" type="number" placeholder="30" min="1" inputmode="numeric"/>
+                            </div>
+                        </div>
+                        <div id="strength-fields" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 9px; margin-bottom: 9px;">
+                            <div>
+                                <label class="form-lbl">Sets</label>
+                                <input class="fc" id="f-sets" type="number" placeholder="4" min="1"/>
+                            </div>
+                            <div>
+                                <label class="form-lbl">Reps</label>
+                                <input class="fc" id="f-reps" type="number" placeholder="12" min="1"/>
+                            </div>
+                            <div>
+                                <label class="form-lbl">Weight (kg)</label>
+                                <input class="fc" id="f-weight" type="number" placeholder="60" step="0.5"/>
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 14px;">
+                            <div>
+                                <label class="form-lbl">Date</label>
+                                <input class="fc" id="f-date" type="date"/>
+                            </div>
+                            <div>
+                                <label class="form-lbl">Note (optional)</label>
+                                <input class="fc" id="f-note" type="text" placeholder="How did it feel?"/>
+                            </div>
+                        </div>
+                        <button class="btn-prime" id="fitness-log-btn" style="background: linear-gradient(135deg, var(--fit), var(--fit-l)); box-shadow: 0 6px 22px rgba(124,58,237,0.38);">
+                            Log Workout →
+                        </button>
+                        <div id="f-suc" class="suc-ban suc-fit">
+                            <svg width="17" height="17" viewBox="0 0 24 24" stroke="var(--fit-ll)">
+                                <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                            Workout logged! +30 XP
+                        </div>
+                    </div>
+                    <div class="g3" style="margin-bottom: 13px;">
+                        <div class="sc" style="text-align: center;">
+                            <div class="sc-lbl">This Week</div>
+                            <div class="sc-val" style="color: var(--fit-ll);" id="fw-sess">0 sessions</div>
+                        </div>
+                        <div class="sc" style="text-align: center;">
+                            <div class="sc-lbl">Total Mins</div>
+                            <div class="sc-val" style="color: var(--gold-ll);" id="fw-mins">0</div>
+                        </div>
+                        <div class="sc" style="text-align: center;">
+                            <div class="sc-lbl">Workout XP</div>
+                            <div class="sc-val" style="color: var(--purple-ll);" id="fw-xp">0</div>
+                        </div>
+                    </div>
+                    <div class="gc" style="padding: 14px; margin-bottom: 13px;">
+                        <div class="sh">
+                            <span class="sh-title">Workout History</span>
+                        </div>
+                        <div id="f-hist" style="display: flex; flex-direction: column; gap: 8px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- QUESTS PAGE -->
+            <div id="p-quests" class="page">
+                <div class="pp">
+                    <div style="margin-bottom: 18px;">
+                        <h2 style="font-family: var(--ff-d); font-size: 22px; font-weight: 800; letter-spacing: -0.7px; margin-bottom: 3px;">
+                            Quest <span style="color: var(--gold-ll);">Board</span>
+                        </h2>
+                        <p style="color: var(--muted); font-size: 12.5px;">Complete missions. Earn XP. Unlock your potential.</p>
+                    </div>
+                    <div class="gc" style="padding: 14px; margin-bottom: 13px;">
+                        <div class="sh">
+                            <span class="sh-title">Daily Quests</span>
+                            <span style="font-size: 10.5px; color: var(--muted);">Resets daily</span>
+                        </div>
+                        <div id="q-daily"></div>
+                    </div>
+                    <div class="gc" style="padding: 14px; margin-bottom: 13px;">
+                        <div class="sh">
+                            <span class="sh-title">Milestone Quests</span>
+                            <span style="font-size: 10.5px; color: var(--muted);">Permanent achievements</span>
+                        </div>
+                        <div id="q-milestones"></div>
+                    </div>
+                    <div class="gc" style="padding: 14px; margin-bottom: 13px;">
+                        <div class="sh">
+                            <span class="sh-title">Badge Collection</span>
+                        </div>
+                        <div class="bdg-grid" id="q-badges"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PROFILE PAGE -->
+            <div id="p-prof" class="page">
+                <div class="pp">
+                    <div class="prof-hero">
+                        <div class="ph-av" id="pf-av">?</div>
+                        <div class="ph-name" id="pf-name">—</div>
+                        <div class="ph-email" id="pf-email">—</div>
+                        <div class="ph-pill">
+                            <svg width="11" height="11" viewBox="0 0 24 24" stroke="var(--gold-ll)">
+                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                            </svg>
+                            <span class="ph-pill-t" id="pf-lv">Level 1 Rookie</span>
+                        </div>
+                    </div>
+                    <div class="prof-stats">
+                        <div class="ps">
+                            <div class="ps-v" id="pf-xp">0</div>
+                            <div class="ps-l">XP Total</div>
+                        </div>
+                        <div class="ps">
+                            <div class="ps-v" id="pf-streak">0</div>
+                            <div class="ps-l">Day Streak</div>
+                        </div>
+                        <div class="ps">
+                            <div class="ps-v" id="pf-disc">0</div>
+                            <div class="ps-l">Disc. Score</div>
+                        </div>
+                        <div class="ps">
+                            <div class="ps-v" id="pf-txs">0</div>
+                            <div class="ps-l">Money Logs</div>
+                        </div>
+                        <div class="ps">
+                            <div class="ps-v" id="pf-wos">0</div>
+                            <div class="ps-l">Workouts</div>
+                        </div>
+                        <div class="ps">
+                            <div class="ps-v" id="pf-bdgc">0</div>
+                            <div class="ps-l">Badges</div>
+                        </div>
+                    </div>
+                    <div class="gc" style="padding: 13px; text-align: center; margin-bottom: 13px;">
+                        <p style="font-size: 10px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">
+                            Member Since
+                        </p>
+                        <p style="font-size: 14px; font-weight: 600;" id="pf-since">—</p>
+                    </div>
+                    <button class="signout-btn" id="logout-btn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" stroke="currentColor">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                            <polyline points="16 17 21 12 16 7"/>
+                            <line x1="21" y1="12" x2="9" y2="12"/>
+                        </svg>
+                        Sign Out
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MOBILE BOTTOM NAV -->
+        <nav id="mob-bnav">
+            <button class="nb on" data-page="dash" id="mn-dash">
+                <svg viewBox="0 0 24 24">
+                    <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+                    <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+                    <rect x="14" y="14" width="7" height="7" rx="1.5"/>
+                    <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+                </svg>
+                Home
+            </button>
+            <button class="nb" data-page="money" id="mn-money">
+                <svg viewBox="0 0 24 24">
+                    <line x1="12" y1="1" x2="12" y2="23"/>
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                </svg>
+                Money
+            </button>
+            <button class="nb" data-page="fitness" id="mn-fitness">
+                <svg viewBox="0 0 24 24">
+                    <path d="M18 8h1a4 4 0 0 1 0 8h-1"/>
+                    <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/>
+                    <line x1="6" y1="1" x2="6" y2="4"/>
+                </svg>
+                Fitness
+            </button>
+            <button class="nb" data-page="quests" id="mn-quests">
+                <svg viewBox="0 0 24 24">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                </svg>
+                Quests
+            </button>
+            <button class="nb" data-page="prof" id="mn-prof">
+                <svg viewBox="0 0 24 24">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                </svg>
+                Me
+            </button>
+        </nav>
     </div>
 
-    <!-- ── LOG ── -->
-    <div id="p-log" class="page">
-      <div class="log-pad">
-        <div class="log-title">Log <span>Transaction</span></div>
-        <div class="log-sub">Every peso logged earns you XP</div>
+    <!-- XP FLOAT CONTAINER -->
+    <div id="xp-root"></div>
 
-        <div class="type-grid">
-          <button class="type-btn" id="tb-income" onclick="setType('income')" data-a="income">
-            <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 5 5 12"/></svg>
-            <span class="type-btn-lbl">Income</span>
-          </button>
-          <button class="type-btn" id="tb-expense" onclick="setType('expense')">
-            <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="5 12 12 19 19 12"/></svg>
-            <span class="type-btn-lbl">Expense</span>
-          </button>
-          <button class="type-btn" id="tb-saving" onclick="setType('saving')">
-            <svg viewBox="0 0 24 24"><rect x="3" y="10" width="18" height="11" rx="2"/><path d="M7 10V7a5 5 0 0 1 10 0v3"/></svg>
-            <span class="type-btn-lbl">Save</span>
-          </button>
-          <button class="type-btn" id="tb-investment" onclick="setType('investment')">
-            <svg viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
-            <span class="type-btn-lbl">Invest</span>
-          </button>
-        </div>
+    <!-- BADGE TOAST -->
+    <div id="badge-toast" style="display: none;"></div>
 
-        <div class="amt-wrap">
-          <span class="amt-sign">&#8369;</span>
-          <input class="amt-inp" id="l-amt" type="number" placeholder="0.00" min="0" step="0.01" inputmode="decimal"/>
+    <!-- PWA INSTALL BANNER -->
+    <div id="pwa-b" style="display: none; position: fixed; bottom: calc(66px + 10px); left: 12px; right: 12px; z-index: 9990; background: linear-gradient(135deg, #150540, #240a60); border: 1px solid rgba(124,58,237,0.45); border-radius: 17px; padding: 13px 15px; align-items: center; gap: 12px; box-shadow: 0 12px 48px rgba(0,0,0,0.6); animation: fadeUp 0.4s ease both; max-width: 400px; margin: 0 auto;">
+        <div style="width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(145deg, var(--purple), var(--purple-l)); display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 6px 18px rgba(124,58,237,0.5);">
+            <svg width="22" height="22" viewBox="0 0 24 24" stroke="#fff" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="22 7 13 16 8 11 2 17"/>
+                <polyline points="16 7 22 7 22 13"/>
+            </svg>
         </div>
-
-        <div class="form-row">
-          <label class="form-lbl">Category</label>
-          <select class="form-ctrl" id="l-cat"></select>
+        <div style="flex: 1;">
+            <div style="font-family: var(--ff-d); font-size: 13.5px; font-weight: 700;">Install FinsCope</div>
+            <div style="font-size: 11px; color: var(--muted); margin-top: 1px;">Add to home screen for best experience</div>
         </div>
-        <div class="form-row">
-          <label class="form-lbl">Date</label>
-          <input class="form-ctrl" id="l-date" type="date"/>
-        </div>
-        <div class="form-row">
-          <label class="form-lbl">Note <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--muted)">(optional)</span></label>
-          <input class="form-ctrl" id="l-note" type="text" placeholder="e.g. Freelance logo project"/>
-        </div>
-
-        <div class="log-btn-wrap">
-          <button class="btn-primary" onclick="doLog()">Log Transaction</button>
-        </div>
-
-        <div id="l-suc" class="suc-banner">
-          <svg width="20" height="20" viewBox="0 0 24 24" stroke="var(--income)"><polyline points="20 6 9 17 4 12"/></svg>
-          <p>Transaction logged! Keep stacking.</p>
-        </div>
-      </div>
+        <button id="pwa-install-btn" style="padding: 7px 13px; border: none; border-radius: 9px; background: linear-gradient(135deg, var(--purple), var(--purple-l)); color: #fff; font-size: 11.5px; font-weight: 700; cursor: pointer; flex-shrink: 0;">Install</button>
+        <button id="pwa-dismiss-btn" style="padding: 7px 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 9px; background: transparent; color: var(--muted); font-size: 11.5px; font-weight: 600; cursor: pointer; flex-shrink: 0;">✕</button>
     </div>
 
-    <!-- ── HISTORY ── -->
-    <div id="p-hist" class="page">
-      <div class="hist-pad">
-        <div class="hist-title">Transaction <span>History</span></div>
-
-        <div class="srch-wrap">
-          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input class="srch-inp" id="h-srch" type="text" placeholder="Search transactions…" oninput="renderHist()"/>
-        </div>
-
-        <div class="filter-row">
-          <button class="flt-btn on" onclick="setFilt('all',this)">All</button>
-          <button class="flt-btn" onclick="setFilt('income',this)">Income</button>
-          <button class="flt-btn" onclick="setFilt('expense',this)">Expenses</button>
-          <button class="flt-btn" onclick="setFilt('saving',this)">Savings</button>
-          <button class="flt-btn" onclick="setFilt('investment',this)">Investments</button>
-        </div>
-
-        <div id="h-list"></div>
-      </div>
-    </div>
-
-    <!-- ── PROFILE ── -->
-    <div id="p-prof" class="page">
-      <div class="prof-pad">
-        <div class="prof-hero-card">
-          <div class="prof-av" id="pf-av">?</div>
-          <div class="prof-name" id="pf-name">—</div>
-          <div class="prof-email" id="pf-email">—</div>
-          <div class="prof-lv-pill">
-            <svg width="12" height="12" viewBox="0 0 24 24" stroke="var(--gold-ll)"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-            <span class="prof-lv-txt" id="pf-lv">Level 1 Stacker</span>
-          </div>
-        </div>
-
-        <div class="prof-stats">
-          <div class="ps-card"><div class="ps-val" id="pf-logs">0</div><div class="ps-lbl">Total Logs</div></div>
-          <div class="ps-card"><div class="ps-val" id="pf-streak">0</div><div class="ps-lbl">Day Streak</div></div>
-          <div class="ps-card"><div class="ps-val" id="pf-xp">0</div><div class="ps-lbl">XP Earned</div></div>
-          <div class="ps-card"><div class="ps-val" id="pf-bc">0</div><div class="ps-lbl">Badges</div></div>
-        </div>
-
-        <div class="prof-section">
-          <div class="prof-sec-title">Badge Collection</div>
-          <div class="badge-list" id="pf-bdg"></div>
-        </div>
-
-        <div class="since-box mb14">
-          <p>Member Since</p>
-          <p id="pf-since">—</p>
-        </div>
-
-        <button class="signout-btn" onclick="doLogout()">
-          <svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-          Sign Out
-        </button>
-      </div>
-    </div>
-
-  </div><!-- /main-content -->
-
-  <!-- MOBILE BOTTOM NAV -->
-  <nav id="mob-bnav">
-    <button class="nav-btn on" onclick="go('dash')" id="mn-dash">
-      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
-      Home
-    </button>
-    <button class="nav-btn" onclick="go('log')" id="mn-log">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-      Log
-    </button>
-    <button class="nav-btn" onclick="go('hist')" id="mn-hist">
-      <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.89"/></svg>
-      History
-    </button>
-    <button class="nav-btn" onclick="go('prof')" id="mn-prof">
-      <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-      Profile
-    </button>
-  </nav>
-
-</div><!-- /app -->
-
-<!-- XP & TOAST -->
-<div id="xp-root"></div>
-<div id="badge-toast" style="display:none"></div>
-
-<!-- OFFLINE BADGE -->
-<div id="offline-badge">
-  <svg width="13" height="13" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/><path d="M10.71 5.05A16 16 0 0 1 22.56 9"/><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
-  You are offline &mdash; data saved locally
-</div>
-
-<!-- PWA INSTALL BANNER -->
-<div id="pwa-banner" style="display:none">
-  <div class="pwa-icon">
-    <svg width="24" height="24" viewBox="0 0 24 24" stroke="#fff" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-      <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
-      <polyline points="17 6 23 6 23 12"/>
-    </svg>
-  </div>
-  <div class="pwa-text">
-    <div class="pwa-title">Install StackUp</div>
-    <div class="pwa-sub">Add to home screen for the best experience</div>
-  </div>
-  <div class="pwa-actions">
-    <button class="pwa-install-btn" onclick="triggerInstall()">Install</button>
-    <button class="pwa-dismiss-btn" onclick="dismissBanner()">Not now</button>
-  </div>
-</div>
-
-<script>
-/* ─────────────────────────────────────────
-   CONSTANTS
-───────────────────────────────────────── */
-const LVL  = [0,100,250,500,900,1500,2400,3800,6000,10000];
-const CIRC = 2 * Math.PI * 48; // r=48 → ≈301.59
-
-const BADGES = [
-  { id:'first_log',   n:'First Log',    d:'Log your first transaction',       xp:50,
-    svg:'<svg width="20" height="20" viewBox="0 0 24 24" stroke="#fff" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' },
-  { id:'week_streak', n:'7-Day Streak', d:'Log every day for a week',          xp:200,
-    svg:'<svg width="20" height="20" viewBox="0 0 24 24" stroke="#fff" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>' },
-  { id:'saver',       n:'Super Saver',  d:'Save over \u20B11,000 total',       xp:150,
-    svg:'<svg width="20" height="20" viewBox="0 0 24 24" stroke="#fff" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="10" width="18" height="11" rx="2"/><path d="M7 10V7a5 5 0 0 1 10 0v3"/></svg>' },
-  { id:'investor',    n:'Market Mover', d:'Make your first investment',        xp:100,
-    svg:'<svg width="20" height="20" viewBox="0 0 24 24" stroke="#fff" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>' },
-  { id:'hustler',     n:'Side Hustler', d:'Log 3 or more income sources',      xp:120,
-    svg:'<svg width="20" height="20" viewBox="0 0 24 24" stroke="#fff" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>' },
-  { id:'budget_king', n:'Budget King',  d:'Log 50 total transactions',         xp:500,
-    svg:'<svg width="20" height="20" viewBox="0 0 24 24" stroke="#fff" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>' },
-];
-
-const CATS = {
-  income:     ['Freelance','Part-time','Side Hustle','Allowance','Gift','Bonus','Other'],
-  expense:    ['Food','Transport','Rent','Bills','Entertainment','Shopping','Health','Education','Other'],
-  saving:     ['Emergency Fund','Goal Savings','Investment Prep','Other'],
-  investment: ['Stocks','Crypto','Mutual Fund','UITF','Business','Other'],
-};
-
-const TC  = { income:'var(--income)', expense:'var(--expense)', saving:'var(--saving)', investment:'var(--invest)' };
-const TCL = { income:'var(--income-l)', expense:'var(--expense-l)', saving:'var(--saving-l)', investment:'var(--invest-l)' };
-
-const TSVG = {
-  income:     '<svg width="19" height="19" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 5 5 12"/></svg>',
-  expense:    '<svg width="19" height="19" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="5 12 12 19 19 12"/></svg>',
-  saving:     '<svg width="19" height="19" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="10" width="18" height="11" rx="2"/><path d="M7 10V7a5 5 0 0 1 10 0v3"/></svg>',
-  investment: '<svg width="19" height="19" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>',
-};
-
-const DSVG = '<svg width="14" height="14" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>';
-
-/* ─────────────────────────────────────────
-   STATE
-───────────────────────────────────────── */
-let U = null, aMode = 'login', lType = 'income', hFilt = 'all';
-
-/* ─────────────────────────────────────────
-   HELPERS
-───────────────────────────────────────── */
-const fp  = n => '\u20B1' + Number(n||0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2});
-const tot = t => (U.transactions||[]).filter(x=>x.type===t).reduce((s,x)=>s+x.amount,0);
-const getLv  = xp => { let l=0; LVL.forEach((v,i)=>{ if(xp>=v) l=i+1; }); return Math.min(l,10); };
-const getPct = xp => { const l=getLv(xp); if(l>=10)return 100; const c=LVL[l-1]||0,n=LVL[l]; return Math.round(((xp-c)/(n-c))*100); };
-const lu = () => JSON.parse(localStorage.getItem('su_users')||'{}');
-const su = u => { const a=lu(); a[u.email]=u; localStorage.setItem('su_users',JSON.stringify(a)); };
-
-/* ─────────────────────────────────────────
-   AUTH
-───────────────────────────────────────── */
-function switchAuth(m) {
-  aMode = m;
-  document.querySelectorAll('.auth-tab').forEach((b,i)=>b.classList.toggle('on', i===(m==='login'?0:1)));
-  document.getElementById('field-name').style.display = m==='register' ? 'block' : 'none';
-  document.querySelector('.btn-primary').textContent  = m==='login' ? 'Sign In \u2192' : 'Start Stacking \u2192';
-  document.getElementById('auth-err').style.display = 'none';
-}
-
-function doAuth() {
-  const email = document.getElementById('inp-email').value.trim();
-  const pass  = document.getElementById('inp-pass').value;
-  const name  = document.getElementById('inp-name').value.trim();
-  const err   = document.getElementById('auth-err');
-  err.style.display = 'none';
-  if (!email||!pass) { err.textContent='Please fill all fields.'; err.style.display='block'; return; }
-  const all = lu();
-  if (aMode==='login') {
-    const u = all[email];
-    if (!u||u.password!==pass) { err.textContent='Invalid email or password.'; err.style.display='block'; return; }
-    loginU(u);
-  } else {
-    if (!name) { err.textContent='Name is required.'; err.style.display='block'; return; }
-    if (all[email]) { err.textContent='Email already registered.'; err.style.display='block'; return; }
-    const u = { id:Date.now(), name, email, password:pass, xp:0, streak:0, lastLog:null, badges:[], transactions:[], createdAt:new Date().toISOString() };
-    su(u); loginU(u);
-  }
-}
-
-function loginU(u) {
-  U = u;
-  localStorage.setItem('su_sess', u.email);
-  document.getElementById('auth-screen').style.display = 'none';
-  document.getElementById('app').classList.add('visible');
-  updNav(); updTopbar(); renderDash();
-}
-
-function doLogout() {
-  U = null;
-  localStorage.removeItem('su_sess');
-  document.getElementById('auth-screen').style.display = 'flex';
-  document.getElementById('app').classList.remove('visible');
-  ['inp-email','inp-pass'].forEach(id => document.getElementById(id).value = '');
-}
-
-/* ─────────────────────────────────────────
-   TOPBAR / SIDEBAR UPDATE
-───────────────────────────────────────── */
-function updTopbar() {
-  if (!U) return;
-  const l   = getLv(U.xp);
-  const pct = getPct(U.xp);
-  // mobile
-  document.getElementById('mob-lv').textContent    = l;
-  document.getElementById('mob-lv-txt').textContent = 'Level ' + l;
-  document.getElementById('mob-xp').textContent    = U.xp + ' XP';
-  // sidebar
-  document.getElementById('sb-lv').textContent     = l;
-  document.getElementById('sb-lv-lbl').textContent = 'Level ' + l;
-  document.getElementById('sb-xp').textContent     = U.xp + ' XP';
-  document.getElementById('sb-fill').style.width   = pct + '%';
-}
-
-/* ─────────────────────────────────────────
-   NAVIGATION
-───────────────────────────────────────── */
-const PAGES = ['dash','log','hist','prof'];
-
-function go(id) {
-  PAGES.forEach(p => {
-    document.getElementById('p-'+p).classList.toggle('on', p===id);
-    // mobile nav
-    const mb = document.getElementById('mn-'+p);
-    if (mb) mb.classList.toggle('on', p===id);
-    // sidebar nav
-    const sb = document.getElementById('sn-'+p);
-    if (sb) sb.classList.toggle('on', p===id);
-  });
-  window.scrollTo({ top:0, behavior:'smooth' });
-  document.getElementById('main-content').scrollTop = 0;
-  if (id==='dash') renderDash();
-  if (id==='hist') renderHist();
-  if (id==='prof') renderProf();
-}
-
-function updNav() {
-  // ensure mobile nav visible
-  document.getElementById('mob-bnav').style.display = 'flex';
-}
-
-/* ─────────────────────────────────────────
-   DONUT
-───────────────────────────────────────── */
-function updateDonut(inc, exp, sav, inv) {
-  const total = inc + exp + sav + inv || 1;
-  const vals  = [inc, exp, sav, inv];
-  const arcs  = ['arc-inc','arc-exp','arc-sav','arc-inv'];
-  let offset  = 0;
-  vals.forEach((v, i) => {
-    const dash = (v / total) * CIRC;
-    const gap  = CIRC - dash;
-    const el   = document.getElementById(arcs[i]);
-    el.setAttribute('stroke-dasharray',  dash + ' ' + gap);
-    el.setAttribute('stroke-dashoffset', -offset);
-    offset += dash;
-  });
-}
-
-/* ─────────────────────────────────────────
-   DASHBOARD
-───────────────────────────────────────── */
-function renderDash() {
-  if (!U) return;
-  const txs = U.transactions || [];
-  const l   = getLv(U.xp);
-  const next = LVL[l] || LVL[LVL.length-1];
-
-  document.getElementById('d-name').textContent   = U.name.split(' ')[0];
-  document.getElementById('d-streak').textContent = U.streak;
-  document.getElementById('d-lv-txt').textContent = 'Level ' + l;
-  document.getElementById('d-xp-txt').textContent = U.xp + ' / ' + next + ' XP';
-  document.getElementById('d-xp-bar').style.width = getPct(U.xp) + '%';
-
-  updTopbar();
-
-  const inc = tot('income'), exp = tot('expense'), sav = tot('saving'), inv = tot('investment');
-  const net = inc - exp;
-
-  document.getElementById('d-net').textContent = fp(net);
-  const sub = document.getElementById('d-net-sub');
-  if (net > 0) { sub.textContent = 'Positive'; sub.style.color = 'var(--income-l)'; }
-  else if (net < 0) { sub.textContent = 'Negative'; sub.style.color = 'var(--expense-l)'; }
-  else { sub.textContent = '—'; sub.style.color = 'var(--muted)'; }
-
-  ['d-inc','d-exp','d-sav','d-inv'].forEach((id,i) =>
-    document.getElementById(id).textContent = fp([inc,exp,sav,inv][i])
-  );
-  ['s-inc','s-exp','s-sav','s-inv'].forEach((id,i) =>
-    document.getElementById(id).textContent = fp([inc,exp,sav,inv][i])
-  );
-  updateDonut(inc, exp, sav, inv);
-
-  // badges
-  const bw = document.getElementById('d-bdg-wrap');
-  if (U.badges && U.badges.length) {
-    bw.style.display = 'block';
-    document.getElementById('d-bdg').innerHTML = U.badges.map(bid => {
-      const b = BADGES.find(x=>x.id===bid); if (!b) return '';
-      return `<div class="badge-chip">
-        <div class="badge-chip-ico">${b.svg.replace('width="20" height="20"','width="14" height="14"')}</div>
-        <span class="badge-chip-name">${b.n}</span>
-      </div>`;
-    }).join('');
-  } else bw.style.display = 'none';
-
-  // recent
-  const recent = [...txs].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,5);
-  const re = document.getElementById('d-recent');
-  if (!recent.length) {
-    re.innerHTML = `<div class="empty-state">
-      <div class="empty-icon"><svg width="26" height="26" viewBox="0 0 24 24" stroke="var(--muted)" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
-      <p>No transactions yet.<br>Start logging your money moves.</p>
-    </div>`;
-  } else {
-    re.innerHTML = `<div class="tx-list">${recent.map(tx=>txRow(tx,false)).join('')}</div>`;
-  }
-}
-
-/* ─────────────────────────────────────────
-   TX ROW
-───────────────────────────────────────── */
-function txRow(tx, showDel=true) {
-  const c   = TC[tx.type];
-  const cl  = TCL[tx.type];
-  const ico = TSVG[tx.type];
-  const sgn = tx.type==='expense' ? '-' : '+';
-  const dt  = new Date(tx.date).toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'});
-  const del = showDel ? `<button class="tx-del" onclick="delTx(${tx.id})">${DSVG}</button>` : '';
-  return `<div class="tx-card">
-    <div class="tx-ico" style="background:${c}18;color:${c}">${ico}</div>
-    <div class="tx-body">
-      <div class="tx-name">${tx.category}</div>
-      <div class="tx-meta">${tx.note ? tx.note + ' &middot; ' : ''}${dt}</div>
-    </div>
-    <div class="tx-right">
-      <div class="tx-amt" style="color:${cl}">${sgn}${fp(tx.amount)}</div>
-      <div class="tx-bottom">
-        <span class="tx-tag" style="background:${c}14;color:${cl}">${tx.type}</span>
-        ${del}
-      </div>
-    </div>
-  </div>`;
-}
-
-/* ─────────────────────────────────────────
-   LOG
-───────────────────────────────────────── */
-document.getElementById('l-date').value = new Date().toISOString().split('T')[0];
-setType('income');
-
-function setType(t) {
-  lType = t;
-  ['income','expense','saving','investment'].forEach(x => {
-    const btn = document.getElementById('tb-' + x);
-    btn.removeAttribute('data-a');
-    if (x === t) btn.setAttribute('data-a', t);
-  });
-  document.getElementById('l-cat').innerHTML =
-    CATS[t].map(c => `<option value="${c}">${c}</option>`).join('');
-}
-
-function doLog() {
-  const amt = parseFloat(document.getElementById('l-amt').value);
-  if (!amt || amt <= 0) { document.getElementById('l-amt').focus(); return; }
-
-  const cat  = document.getElementById('l-cat').value;
-  const note = document.getElementById('l-note').value.trim();
-  const date = document.getElementById('l-date').value || new Date().toISOString().split('T')[0];
-  const tx   = { id:Date.now(), type:lType, amount:amt, category:cat, note, date };
-  const txs  = [...(U.transactions||[]), tx];
-  let xp = 20, nb = [...(U.badges||[])];
-
-  const tryB = id => {
-    if (!nb.includes(id)) {
-      const b = BADGES.find(x=>x.id===id);
-      if (b) { nb.push(id); xp += b.xp; showBT(b); }
-    }
-  };
-
-  if (txs.length === 1) tryB('first_log');
-  if (txs.length >= 50) tryB('budget_king');
-  if (lType === 'investment') tryB('investor');
-  if (txs.filter(t=>t.type==='income').length >= 3) tryB('hustler');
-  if (txs.filter(t=>t.type==='saving').reduce((s,t)=>s+t.amount,0) >= 1000) tryB('saver');
-
-  const today = new Date().toDateString();
-  const yest  = new Date(Date.now()-86400000).toDateString();
-  let streak  = U.streak || 0;
-  if (U.lastLog !== today) {
-    streak = U.lastLog === yest ? streak + 1 : 1;
-    if (streak >= 7) tryB('week_streak');
-  }
-
-  U = { ...U, transactions:txs, xp:(U.xp||0)+xp, badges:nb, streak, lastLog:today };
-  su(U); updTopbar(); showXP(xp);
-
-  document.getElementById('l-amt').value  = '';
-  document.getElementById('l-note').value = '';
-
-  const suc = document.getElementById('l-suc');
-  suc.classList.add('show');
-  setTimeout(() => suc.classList.remove('show'), 2600);
-}
-
-/* ─────────────────────────────────────────
-   HISTORY
-───────────────────────────────────────── */
-function setFilt(f, el) {
-  hFilt = f;
-  document.querySelectorAll('.flt-btn').forEach(b=>b.classList.remove('on'));
-  el.classList.add('on');
-  renderHist();
-}
-
-function renderHist() {
-  if (!U) return;
-  const q   = (document.getElementById('h-srch').value||'').toLowerCase();
-  let txs   = [...(U.transactions||[])];
-  if (hFilt !== 'all') txs = txs.filter(t=>t.type===hFilt);
-  if (q) txs = txs.filter(t => t.category.toLowerCase().includes(q) || (t.note||'').toLowerCase().includes(q));
-  txs.sort((a,b) => new Date(b.date)-new Date(a.date));
-
-  const el = document.getElementById('h-list');
-  if (!txs.length) {
-    el.innerHTML = `<div class="empty-state">
-      <div class="empty-icon"><svg width="26" height="26" viewBox="0 0 24 24" stroke="var(--muted)" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.89"/></svg></div>
-      <p>No transactions found.</p>
-    </div>`;
-  } else {
-    el.innerHTML = `<div class="tx-list" style="padding-bottom:14px">${txs.map(tx=>txRow(tx,true)).join('')}</div>`;
-  }
-}
-
-function delTx(id) {
-  U.transactions = U.transactions.filter(t=>t.id!==id);
-  su(U); renderHist(); renderDash();
-}
-
-/* ─────────────────────────────────────────
-   PROFILE
-───────────────────────────────────────── */
-function renderProf() {
-  if (!U) return;
-  const l = getLv(U.xp);
-  document.getElementById('pf-av').textContent      = U.name.charAt(0).toUpperCase();
-  document.getElementById('pf-name').textContent    = U.name;
-  document.getElementById('pf-email').textContent   = U.email;
-  document.getElementById('pf-lv').textContent      = 'Level ' + l + ' Stacker';
-  document.getElementById('pf-logs').textContent    = (U.transactions||[]).length;
-  document.getElementById('pf-streak').textContent  = U.streak;
-  document.getElementById('pf-xp').textContent      = U.xp;
-  document.getElementById('pf-bc').textContent      = (U.badges||[]).length;
-  document.getElementById('pf-since').textContent   = new Date(U.createdAt).toLocaleDateString('en-PH',{month:'long',day:'numeric',year:'numeric'});
-
-  document.getElementById('pf-bdg').innerHTML = BADGES.map(b => {
-    const owned = (U.badges||[]).includes(b.id);
-    return `<div class="badge-row ${owned?'unlocked':'locked'}">
-      <div class="badge-ico ${owned?'u':'l'}">${b.svg}</div>
-      <div class="badge-info">
-        <div class="badge-name">${b.n}</div>
-        <div class="badge-desc">${b.d}</div>
-      </div>
-      <div class="badge-meta">
-        <div class="badge-xp">+${b.xp} XP</div>
-        ${owned
-          ? '<svg width="16" height="16" viewBox="0 0 24 24" stroke="var(--income)" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
-          : '<svg width="16" height="16" viewBox="0 0 24 24" stroke="var(--muted)" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>'
-        }
-      </div>
-    </div>`;
-  }).join('');
-}
-
-/* ─────────────────────────────────────────
-   XP FLOAT
-───────────────────────────────────────── */
-function showXP(amt) {
-  const el = document.createElement('div');
-  el.className   = 'xp-float';
-  el.textContent = '+' + amt + ' XP';
-  el.style.left  = (Math.random() * 120 + window.innerWidth / 2 - 60) + 'px';
-  el.style.top   = (window.innerHeight * 0.42) + 'px';
-  document.getElementById('xp-root').appendChild(el);
-  setTimeout(() => el.remove(), 1700);
-}
-
-/* ─────────────────────────────────────────
-   BADGE TOAST
-───────────────────────────────────────── */
-let btTimer = null;
-function showBT(b) {
-  if (btTimer) clearTimeout(btTimer);
-  const t = document.getElementById('badge-toast');
-  t.style.display = 'flex'; t.classList.remove('hide');
-  t.innerHTML = `<div class="bt-ico">${b.svg}</div>
-    <div>
-      <div class="bt-tag">Badge Unlocked</div>
-      <div class="bt-name">${b.n}</div>
-      <div class="bt-desc">${b.d}</div>
-    </div>`;
-  btTimer = setTimeout(() => {
-    t.classList.add('hide');
-    setTimeout(() => t.style.display = 'none', 330);
-  }, 4000);
-}
-
-/* ─────────────────────────────────────────
-   INIT
-───────────────────────────────────────── */
-(function init() {
-  const sess = localStorage.getItem('su_sess');
-  if (sess) {
-    const all = lu();
-    if (all[sess]) { loginU(all[sess]); return; }
-  }
-})();
-</script>
-
-<!-- ═══════════════════════════════════════
-     PWA BOOTSTRAP
-     Injects manifest + service worker
-     entirely from within this single file
-═══════════════════════════════════════ -->
-<script>
-(function pwaBootstrap() {
-
-  /* ── 1. SVG ICON (512×512) ─────────────────────────────
-     Generated as a data URI so no external files needed    */
-  const iconSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-    <rect width="512" height="512" rx="110" fill="#07070e"/>
-    <rect width="512" height="512" rx="110" fill="url(#bg)"/>
-    <defs>
-      <radialGradient id="bg" cx="50%" cy="0%" r="100%">
-        <stop offset="0%" stop-color="#3d1a7a"/>
-        <stop offset="100%" stop-color="#07070e"/>
-      </radialGradient>
-    </defs>
-    <polyline points="380,145 260,265 195,200 120,275"
-      stroke="#c084fc" stroke-width="28" stroke-linecap="round"
-      stroke-linejoin="round" fill="none"/>
-    <polyline points="320,145 380,145 380,205"
-      stroke="#fcd34d" stroke-width="28" stroke-linecap="round"
-      stroke-linejoin="round" fill="none"/>
-    <text x="256" y="420" text-anchor="middle"
-      font-family="Arial Black,sans-serif" font-size="72"
-      font-weight="900" fill="#c084fc" letter-spacing="-2">StackUp</text>
-  </svg>`;
-
-  const iconDataURI = 'data:image/svg+xml;base64,' + btoa(iconSVG);
-
-  /* ── 2. INJECT MANIFEST AS BLOB URL ──────────────────── */
-  const manifest = {
-    name: 'StackUp — Money Tracker',
-    short_name: 'StackUp',
-    description: 'Gamified money tracker for students and side hustlers',
-    start_url: './',
-    display: 'standalone',
-    orientation: 'portrait-primary',
-    background_color: '#07070e',
-    theme_color: '#07070e',
-    lang: 'en',
-    categories: ['finance', 'productivity', 'lifestyle'],
-    icons: [
-      { src: iconDataURI, sizes: '192x192', type: 'image/svg+xml', purpose: 'any maskable' },
-      { src: iconDataURI, sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' },
-    ],
-    screenshots: [],
-  };
-
-  const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
-  const manifestURL  = URL.createObjectURL(manifestBlob);
-  document.getElementById('pwa-manifest').href = manifestURL;
-
-  /* Apple touch icon */
-  document.getElementById('pwa-icon-apple').href = iconDataURI;
-
-  /* Favicon */
-  const favicon = document.createElement('link');
-  favicon.rel   = 'icon';
-  favicon.type  = 'image/svg+xml';
-  favicon.href  = iconDataURI;
-  document.head.appendChild(favicon);
-
-  /* ── 3. SERVICE WORKER (inline as Blob) ───────────────
-     Caches the app shell for full offline support         */
-  const SW_VERSION = 'stackup-v4';
-
-  const swCode = `
-const CACHE = '${SW_VERSION}';
-const FONTS = [
-  'https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap',
-  'https://fonts.gstatic.com'
-];
-
-self.addEventListener('install', e => {
-  self.skipWaiting();
-  e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll([]))
-  );
-});
-
-self.addEventListener('activate', e => {
-  e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-    ).then(() => self.clients.claim())
-  );
-});
-
-self.addEventListener('fetch', e => {
-  const url = e.request.url;
-  /* Let POST and non-GET through */
-  if (e.request.method !== 'GET') return;
-
-  /* Google Fonts — network first, cache fallback */
-  if (url.includes('fonts.googleapis.com') || url.includes('fonts.gstatic.com')) {
-    e.respondWith(
-      fetch(e.request).then(r => {
-        const clone = r.clone();
-        caches.open(CACHE).then(c => c.put(e.request, clone));
-        return r;
-      }).catch(() => caches.match(e.request))
-    );
-    return;
-  }
-
-  /* Everything else — cache first, then network */
-  e.respondWith(
-    caches.match(e.request).then(cached => {
-      if (cached) return cached;
-      return fetch(e.request).then(r => {
-        if (!r || r.status !== 200 || r.type === 'opaque') return r;
-        const clone = r.clone();
-        caches.open(CACHE).then(c => c.put(e.request, clone));
-        return r;
-      });
-    })
-  );
-});
-`;
-
-  if ('serviceWorker' in navigator) {
-    const swBlob = new Blob([swCode], { type: 'application/javascript' });
-    const swURL  = URL.createObjectURL(swBlob);
-    navigator.serviceWorker.register(swURL, { scope: './' })
-      .then(reg => {
-        console.log('[StackUp SW] Registered, scope:', reg.scope);
-      })
-      .catch(err => console.warn('[StackUp SW] Registration failed:', err));
-  }
-
-  /* ── 4. ONLINE / OFFLINE indicator ───────────────────── */
-  const offlineBadge = document.getElementById('offline-badge');
-
-  function syncOnlineState() {
-    if (!navigator.onLine) offlineBadge.classList.add('show');
-    else offlineBadge.classList.remove('show');
-  }
-  window.addEventListener('online',  syncOnlineState);
-  window.addEventListener('offline', syncOnlineState);
-  syncOnlineState();
-
-  /* ── 5. INSTALL PROMPT (Android Chrome) ──────────────── */
-  let deferredPrompt = null;
-  const banner = document.getElementById('pwa-banner');
-
-  window.addEventListener('beforeinstallprompt', e => {
-    e.preventDefault();
-    deferredPrompt = e;
-
-    /* Don't show if already dismissed in this session */
-    if (sessionStorage.getItem('pwa-dismissed')) return;
-
-    /* Show banner after a short delay */
-    setTimeout(() => {
-      banner.style.display = 'flex';
-    }, 3000);
-  });
-
-  window.triggerInstall = function () {
-    if (!deferredPrompt) return;
-    banner.classList.add('hide');
-    setTimeout(() => banner.style.display = 'none', 300);
-    deferredPrompt.prompt();
-    deferredPrompt.userChoice.then(result => {
-      if (result.outcome === 'accepted') {
-        console.log('[StackUp PWA] Installed!');
-      }
-      deferredPrompt = null;
-    });
-  };
-
-  window.dismissBanner = function () {
-    banner.classList.add('hide');
-    setTimeout(() => banner.style.display = 'none', 300);
-    sessionStorage.setItem('pwa-dismissed', '1');
-  };
-
-  /* Hide banner if already installed */
-  window.addEventListener('appinstalled', () => {
-    banner.style.display = 'none';
-    deferredPrompt = null;
-    console.log('[StackUp PWA] App installed successfully');
-  });
-
-  /* ── 6. STANDALONE DETECTION ──────────────────────────
-     Show a subtle "running as app" indicator in topbar    */
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches
-    || window.navigator.standalone === true;
-
-  if (isStandalone) {
-    document.title = 'StackUp';
-    /* Remove install banner — already installed */
-    banner.style.display = 'none';
-    console.log('[StackUp PWA] Running in standalone mode');
-  }
-
-})();
-</script>
 </body>
 </html>
