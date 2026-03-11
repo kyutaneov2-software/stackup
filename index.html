@@ -3,16 +3,13 @@
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <meta name="theme-color" content="#000000"/>
-    <meta name="mobile-web-app-capable" content="yes"/>
-    <meta name="apple-mobile-web-app-capable" content="yes"/>
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
     <title>FinsCope — Financial Fitness</title>
+    <!-- Minimal CSP (adjust as needed) -->
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;">
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
-	<script src="script.js" defer></script>
     <!-- Styles -->
     <link rel="stylesheet" href="style.css">
 </head>
@@ -32,6 +29,7 @@
                 <div class="auth-sub">Track money. Train body. Level up.</div>
             </div>
             <div class="auth-tabs">
+                <!-- Inline onclick removed – handled by script.js -->
                 <button class="a-tab on" data-auth-mode="login">Sign In</button>
                 <button class="a-tab" data-auth-mode="register">Create Account</button>
             </div>
@@ -366,26 +364,6 @@
 
                     <!-- ACTIVITY + QUESTS -->
                     <div class="g2" style="gap: 12px; margin-bottom: 14px;">
-                        <div class="gc" style="padding: 14px;">
-                            <div class="sh">
-                                <span class="sh-title">14-Day Activity</span>
-                            </div>
-                            <div style="display: flex; gap: 5px; margin-bottom: 8px; flex-wrap: wrap;">
-                                <span style="font-size: 9px; color: var(--muted); display: flex; align-items: center; gap: 3px;">
-                                    <span style="width: 9px; height: 9px; border-radius: 3px; background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.4); display: inline-block;"></span>
-                                    Money
-                                </span>
-                                <span style="font-size: 9px; color: var(--muted); display: flex; align-items: center; gap: 3px;">
-                                    <span style="width: 9px; height: 9px; border-radius: 3px; background: rgba(124,58,237,0.15); border: 1px solid rgba(124,58,237,0.4); display: inline-block;"></span>
-                                    Fitness
-                                </span>
-                                <span style="font-size: 9px; color: var(--muted); display: flex; align-items: center; gap: 3px;">
-                                    <span style="width: 9px; height: 9px; border-radius: 3px; background: rgba(252,211,77,0.1); border: 1px solid rgba(252,211,77,0.5); display: inline-block;"></span>
-                                    Both
-                                </span>
-                            </div>
-                            <div class="heatmap" id="heatmap"></div>
-                        </div>
                         <div class="gc" style="padding: 14px;">
                             <div class="sh">
                                 <span class="sh-title">Today's Quests</span>
@@ -787,5 +765,8 @@
         <button id="pwa-dismiss-btn" style="padding: 7px 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 9px; background: transparent; color: var(--muted); font-size: 11.5px; font-weight: 600; cursor: pointer; flex-shrink: 0;">✕</button>
     </div>
 
+        <!-- Supabase client library -->
+    <script src="supabase.js"></script>
+    <script src="script.js" defer></script>
 </body>
 </html>
