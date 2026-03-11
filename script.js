@@ -1,4 +1,9 @@
 (function() {
+    // ==================== SUPABASE INITIALIZATION ====================
+    const supabaseUrl = 'https://ecrumjanajlcvbjbpdeb.supabase.co';
+    const supabaseAnonKey = 'sb_publishable_osfB4kEj50HcedsCYJTbtg_5Bzati-7';
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
+
     // ==================== CONSTANTS ====================
     const XP_LVL = [0, 100, 250, 500, 900, 1500, 2400, 3800, 6000, 10000, 15000, 22000, 32000, 45000, 62000];
     const RANKS = ['Rookie', 'Grinder', 'Hustler', 'Builder', 'Stacker', 'Achiever', 'Warrior', 'Champion', 'Elite', 'Legend', 'Master', 'Grandmaster', 'Titan', 'Mythic', 'Supreme'];
@@ -63,8 +68,9 @@
     let moneyType = 'income';
     let fitnessType = 'strength';
     let moneyFilter = 'all';
+    let isLoading = false; // for UI loading states
 
-    // DOM element shortcuts (will be populated after DOM ready)
+    // DOM element shortcuts
     let el = {};
 
     // ==================== HELPERS ====================
@@ -86,17 +92,6 @@
         const current = XP_LVL[level - 1] || 0;
         const next = XP_LVL[level] || current;
         return Math.round(((xp - current) / (next - current)) * 100);
-    };
-
-    const getAllUsers = () => JSON.parse(localStorage.getItem('su_users') || '{}');
-
-    const saveUser = () => {
-        if (!currentUser) return;
-        const users = getAllUsers();
-        users[currentUser.email] = currentUser;
-        localStorage.setItem('su_users', JSON.stringify(users));
-        localStorage.setItem('su_sess', currentUser.email);
-        updateUI();
     };
 
     const sumByType = (arr, type) => (arr || []).filter(x => x.type === type).reduce((s, x) => s + x.amount, 0);
@@ -137,7 +132,6 @@
             investment: ['Stocks', 'Crypto']
         };
 
-        // Generate 10 random transactions over the last 30 days
         for (let i = 0; i < 10; i++) {
             const date = new Date(now);
             date.setDate(now.getDate() - Math.floor(Math.random() * 30));
@@ -155,7 +149,6 @@
             transactions.push(transaction);
         }
 
-        // Generate 5 random workouts over the last 14 days
         const workoutTypes = ['strength', 'cardio', 'hiit', 'flexibility', 'sports'];
         for (let i = 0; i < 5; i++) {
             const date = new Date(now);
@@ -179,6 +172,44 @@
         return { transactions, workouts };
     }
 
+    // ==================== SUPABASE HELPERS ====================
+    async function loadUserData(userId) {
+        const { data, error } = await supabase
+            .from('users')
+            .select('data')
+            .eq('id', userId)
+            .single();
+        if (error) {
+            if (error.code === 'PGRST116') return null; // row not found
+            console.error('Error loading user data:', error);
+            throw error;
+        }
+        return data.data;
+    }
+
+    async function saveUserData(userId, userData) {
+        const { error } = await supabase
+            .from('users')
+            .upsert({ id: userId, data: userData });
+        if (error) {
+            console.error('Error saving user data:', error);
+            throw error;
+        }
+    }
+
+    // ==================== LOADING STATE UI ====================
+    function setLoading(button, isLoading) {
+        if (!button) return;
+        if (isLoading) {
+            button.disabled = true;
+            button.dataset.originalText = button.textContent;
+            button.textContent = 'Loading...';
+        } else {
+            button.disabled = false;
+            button.textContent = button.dataset.originalText || button.textContent;
+        }
+    }
+
     // ==================== AUTH ====================
     function switchAuthMode(mode) {
         document.querySelectorAll('.a-tab').forEach((btn, idx) => {
@@ -189,7 +220,7 @@
         el.authError.style.display = 'none';
     }
 
-    function doAuth() {
+    async function doAuth() {
         const email = el.authEmail.value.trim();
         const pass = el.authPassword.value;
         const name = el.authName.value.trim();
@@ -197,62 +228,79 @@
 
         el.authError.style.display = 'none';
         if (!email || !pass) {
-            el.authError.textContent = 'Please fill all fields.';
-            el.authError.style.display = 'block';
+            showAuthError('Please fill all fields.');
             return;
         }
 
-        const users = getAllUsers();
-        if (mode === 'login') {
-            const user = users[email];
-            if (!user || user.password !== pass) {
-                el.authError.textContent = 'Invalid email or password.';
-                el.authError.style.display = 'block';
-                return;
-            }
-            loginUser(user);
-        } else {
-            if (!name) {
-                el.authError.textContent = 'Name is required.';
-                el.authError.style.display = 'block';
-                return;
-            }
-            if (users[email]) {
-                el.authError.textContent = 'Email already registered.';
-                el.authError.style.display = 'block';
-                return;
+        setLoading(el.authAction, true);
+
+        try {
+            let userId;
+            if (mode === 'login') {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email,
+                    password: pass
+                });
+                if (error) throw error;
+                userId = data.user.id;
+            } else {
+                // Register
+                if (!name) {
+                    showAuthError('Name is required.');
+                    setLoading(el.authAction, false);
+                    return;
+                }
+                const { data, error } = await supabase.auth.signUp({
+                    email,
+                    password: pass,
+                    options: {
+                        data: { name }
+                    }
+                });
+                if (error) throw error;
+                userId = data.user.id;
             }
 
-            // Generate demo data for new users
-            const demo = generateDemoData();
+            // Load user data
+            let userData = await loadUserData(userId);
+            if (!userData) {
+                // New user: create default data
+                const demo = generateDemoData();
+                // Get user metadata (name might be in user_metadata)
+                const { data: userInfo } = await supabase.auth.getUser();
+                const displayName = userInfo.user?.user_metadata?.name || name || 'User';
+                userData = {
+                    name: displayName,
+                    email,
+                    xp: 350,
+                    streak: 3,
+                    lastLog: new Date().toISOString().split('T')[0],
+                    badges: [],
+                    transactions: demo.transactions,
+                    workouts: demo.workouts,
+                    dailyQ: {},
+                    claimedMs: {},
+                    createdAt: new Date().toISOString()
+                };
+                await saveUserData(userId, userData);
+            }
 
-            const newUser = {
-                id: Date.now(),
-                name,
-                email,
-                password: pass,
-                xp: 350, // Give some starting XP
-                streak: 3,
-                lastLog: new Date().toISOString().split('T')[0],
-                badges: [],
-                transactions: demo.transactions,
-                workouts: demo.workouts,
-                dailyQ: {},
-                claimedMs: {},
-                createdAt: new Date().toISOString()
-            };
-            users[email] = newUser;
-            localStorage.setItem('su_users', JSON.stringify(users));
-            loginUser(newUser);
+            currentUser = { uid: userId, ...userData };
+            afterLogin();
+        } catch (error) {
+            console.error('Auth error:', error);
+            showAuthError(error.message || 'Authentication failed. Please try again.');
+        } finally {
+            setLoading(el.authAction, false);
         }
     }
 
-    function loginUser(user) {
-        currentUser = user;
-        // Ensure required properties exist
-        if (!currentUser.dailyQ) currentUser.dailyQ = {};
-        if (!currentUser.claimedMs) currentUser.claimedMs = {};
-        localStorage.setItem('su_sess', user.email);
+    function showAuthError(message) {
+        el.authError.textContent = message;
+        el.authError.style.display = 'block';
+    }
+
+    function afterLogin() {
         el.auth.style.display = 'none';
         el.app.classList.add('on');
         buildMonthStrip();
@@ -261,13 +309,68 @@
         renderDashboard();
     }
 
-    function logout() {
-        currentUser = null;
-        localStorage.removeItem('su_sess');
-        el.auth.style.display = 'flex';
-        el.app.classList.remove('on');
-        el.authEmail.value = '';
-        el.authPassword.value = '';
+    async function logout() {
+        setLoading(el.logoutBtn, true);
+        try {
+            await supabase.auth.signOut();
+            currentUser = null;
+            el.auth.style.display = 'flex';
+            el.app.classList.remove('on');
+            el.authEmail.value = '';
+            el.authPassword.value = '';
+        } catch (error) {
+            console.error('Logout error:', error);
+        } finally {
+            setLoading(el.logoutBtn, false);
+        }
+    }
+
+    // ==================== AUTH STATE LISTENER ====================
+    supabase.auth.onAuthStateChange(async (event, session) => {
+        if (event === 'SIGNED_IN' && session?.user) {
+            const userId = session.user.id;
+            try {
+                let userData = await loadUserData(userId);
+                if (!userData) {
+                    // Create default if missing (shouldn't happen after signup)
+                    const demo = generateDemoData();
+                    userData = {
+                        name: session.user.user_metadata?.name || 'User',
+                        email: session.user.email,
+                        xp: 350,
+                        streak: 3,
+                        lastLog: new Date().toISOString().split('T')[0],
+                        badges: [],
+                        transactions: demo.transactions,
+                        workouts: demo.workouts,
+                        dailyQ: {},
+                        claimedMs: {},
+                        createdAt: new Date().toISOString()
+                    };
+                    await saveUserData(userId, userData);
+                }
+                currentUser = { uid: userId, ...userData };
+                afterLogin();
+            } catch (error) {
+                console.error('Error loading user on auth change:', error);
+                // Optionally force logout
+                await supabase.auth.signOut();
+            }
+        } else if (event === 'SIGNED_OUT') {
+            currentUser = null;
+            if (el.app.classList.contains('on')) {
+                el.app.classList.remove('on');
+                el.auth.style.display = 'flex';
+            }
+        }
+    });
+
+    // ==================== SAVE USER ====================
+    async function saveUser() {
+        if (!currentUser) return;
+        const { uid, ...userData } = currentUser;
+        await saveUserData(uid, userData);
+        updateUI();
     }
 
     // ==================== NAVIGATION ====================
@@ -286,7 +389,6 @@
         });
         window.scrollTo({ top: 0, behavior: 'smooth' });
 
-        // Trigger page-specific rendering
         if (pageId === 'dash') renderDashboard();
         else if (pageId === 'money') renderMoney();
         else if (pageId === 'fitness') renderFitness();
@@ -317,7 +419,6 @@
         const progress = getLevelProgress(currentUser.xp);
         const discScore = calculateDisciplineScore();
 
-        // Update all UI elements that show XP/level
         if (el.mLv) el.mLv.textContent = level;
         if (el.mLvT) el.mLvT.textContent = 'Lv ' + level;
         if (el.mXp) el.mXp.textContent = currentUser.xp + ' XP';
@@ -370,7 +471,6 @@
         const barWidth = (chartWidth / 12) * 0.32;
         const gap = chartWidth / 12;
 
-        // Grid lines
         ctx.strokeStyle = 'rgba(255,255,255,0.04)';
         ctx.lineWidth = 1;
         for (let i = 0; i <= 4; i++) {
@@ -387,13 +487,11 @@
             const incHeight = (monthlyInc[m] / maxVal) * chartHeight;
             const expHeight = (monthlyExp[m] / maxVal) * chartHeight;
 
-            // Highlight selected month background
             if (isSelected) {
                 ctx.fillStyle = 'rgba(252,211,77,0.05)';
                 ctx.fillRect(x - gap / 2, padding.top, gap, chartHeight);
             }
 
-            // Income bar
             const incGradient = ctx.createLinearGradient(0, padding.top + chartHeight - incHeight, 0, padding.top + chartHeight);
             incGradient.addColorStop(0, isSelected ? 'rgba(16,185,129,0.95)' : 'rgba(16,185,129,0.5)');
             incGradient.addColorStop(1, 'rgba(16,185,129,0.05)');
@@ -401,7 +499,6 @@
             roundedRect(ctx, x - barWidth - 1, padding.top + chartHeight - incHeight, barWidth, incHeight, 3);
             ctx.fill();
 
-            // Expense bar
             const expGradient = ctx.createLinearGradient(0, padding.top + chartHeight - expHeight, 0, padding.top + chartHeight);
             expGradient.addColorStop(0, isSelected ? 'rgba(244,63,94,0.95)' : 'rgba(244,63,94,0.5)');
             expGradient.addColorStop(1, 'rgba(244,63,94,0.05)');
@@ -409,14 +506,12 @@
             roundedRect(ctx, x + 1, padding.top + chartHeight - expHeight, barWidth, expHeight, 3);
             ctx.fill();
 
-            // Month label
             ctx.fillStyle = isSelected ? 'rgba(252,211,77,0.9)' : 'rgba(200,200,255,0.3)';
             ctx.font = (isSelected ? 'bold ' : '') + '7.5px sans-serif';
             ctx.textAlign = 'center';
             ctx.fillText(MONTHS[m], x, height - padding.bottom + 9);
         }
 
-        // Update chart subtitle
         if (el.chartSub) {
             el.chartSub.innerHTML = `<span style="color:var(--income-ll)">${formatPeso(monthlyInc[selectedMonth])}</span> income · <span style="color:var(--expense-ll)">${formatPeso(monthlyExp[selectedMonth])}</span> expenses — ${MFULL[selectedMonth]}`;
         }
@@ -436,8 +531,8 @@
     }
 
     // ==================== DONUT HELPERS ====================
-    const CIRC36 = 2 * Math.PI * 36; // ~226.2
-    const CIRC38 = 2 * Math.PI * 38; // ~238.8
+    const CIRC36 = 2 * Math.PI * 36;
+    const CIRC38 = 2 * Math.PI * 38;
 
     function updateDonut4(ids, values) {
         const total = values.reduce((a, b) => a + b, 0) || 1;
@@ -473,7 +568,6 @@
         const progress = getLevelProgress(currentUser.xp);
         const discScore = calculateDisciplineScore();
 
-        // Player card
         if (el.dName) el.dName.textContent = currentUser.name.split(' ')[0];
         if (el.dRank) el.dRank.textContent = getRank(level);
         if (el.dDisc) el.dDisc.textContent = discScore;
@@ -487,7 +581,6 @@
             el.discArc.setAttribute('stroke-dasharray', dash + ' ' + gap);
         }
 
-        // Month transactions
         const monthTxs = txs.filter(t => {
             const d = new Date(t.date);
             return d.getMonth() === selectedMonth && d.getFullYear() === new Date().getFullYear();
@@ -504,7 +597,6 @@
             el.mbNet.style.background = net >= 0 ? 'var(--income-l)' : 'var(--expense-l)';
         }
 
-        // Week workouts
         const weekWos = thisWeekWorkouts();
         const woCount = weekWos.length;
         if (el.dWoc) el.dWoc.textContent = woCount + ' session' + (woCount !== 1 ? 's' : '');
@@ -514,7 +606,6 @@
         if (el.dStr) el.dStr.textContent = streak + ' day' + (streak !== 1 ? 's' : '');
         if (el.mbStr) el.mbStr.style.width = Math.min(streak / 30 * 100, 100) + '%';
 
-        // Money donut
         updateDonut4(['mr-inc', 'mr-exp', 'mr-sav', 'mr-inv'], [inc, exp, sav, inv]);
         const savePercent = inc > 0 ? Math.round((sav / inc) * 100) : 0;
         if (el.mrPct) el.mrPct.textContent = savePercent + '%';
@@ -526,7 +617,6 @@
             el.ratioSub.innerHTML = net >= 0 ? `<span style="color:var(--income-ll)">+${formatPeso(net)}</span> net positive` : `<span style="color:var(--expense-ll)">${formatPeso(net)}</span> net negative`;
         }
 
-        // Fitness donut
         const woMins = weekWos.reduce((s, w) => s + (w.duration || 0), 0);
         const woXP = weekWos.length * 30;
         const woGoal = 7;
@@ -538,22 +628,15 @@
         if (el.woXpe) el.woXpe.textContent = woXP;
         if (el.woSub) el.woSub.textContent = woCount + '/' + woGoal + ' sessions goal this week';
 
-        // Quick stats
         if (el.qsInc) el.qsInc.textContent = formatPeso(inc);
         if (el.qsExp) el.qsExp.textContent = formatPeso(exp);
         if (el.qsSav) el.qsSav.textContent = formatPeso(sav);
         if (el.qsWo) el.qsWo.textContent = woCount;
 
-        // Bar chart
         requestAnimationFrame(drawBarChart);
-
-        // Heatmap
         renderHeatmap();
-
-        // Today's quests
         renderTodayQuests();
 
-        // Recent activity
         const recent = [...txs].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
         if (el.dRecent) {
             if (!recent.length) {
@@ -589,7 +672,6 @@
             if (isToday) cls += ' today';
             html += `<div class="${cls}" title="${ds}">${d.getDate()}</div>`;
         }
-        // If no activity at all, show a message
         if (!hasAny) {
             el.heatmap.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--muted);">No activity in the last 14 days. Log a transaction or workout to see your heatmap!</div>';
         } else {
@@ -621,14 +703,14 @@
         }).join('');
     }
 
-    function claimDailyQuest(questId, xp, checkElement) {
+    async function claimDailyQuest(questId, xp, checkElement) {
         if (!currentUser) return;
         const today = new Date().toDateString();
         const key = questId + '_' + today;
         if (currentUser.dailyQ[key]) return;
         currentUser.dailyQ[key] = true;
         currentUser.xp = (currentUser.xp || 0) + xp;
-        saveUser();
+        await saveUser();
         showXP(xp);
         checkElement.classList.add('done');
         checkElement.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" stroke="#fff" fill="none" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>';
@@ -666,7 +748,7 @@
         }
     }
 
-    function doMoneyLog() {
+    async function doMoneyLog() {
         if (!currentUser) return;
         const amount = parseFloat(el.mAmt.value);
         if (!amount || amount <= 0) {
@@ -707,11 +789,9 @@
         if (txs.filter(t => t.type === 'income').length >= 3) tryAddBadge('hustler');
         if (txs.filter(t => t.type === 'saving').reduce((s, t) => s + t.amount, 0) >= 1000) tryAddBadge('saver');
 
-        // Balanced badge check
         const todayWorkouts = (currentUser.workouts || []).filter(w => w.date === date);
         if (todayWorkouts.length > 0) tryAddBadge('balanced');
 
-        // Streak
         const todayStr = new Date().toDateString();
         const yesterdayStr = new Date(Date.now() - 86400000).toDateString();
         let streak = currentUser.streak || 0;
@@ -730,7 +810,7 @@
             streak,
             lastLog: todayStr
         };
-        saveUser();
+        await saveUser();
 
         showXP(xpGain);
         el.mAmt.value = '';
@@ -743,10 +823,10 @@
         renderDashboard();
     }
 
-    function deleteTransaction(txId) {
+    async function deleteTransaction(txId) {
         if (!currentUser) return;
         currentUser.transactions = (currentUser.transactions || []).filter(t => t.id !== txId);
-        saveUser();
+        await saveUser();
         renderMoney();
         renderDashboard();
     }
@@ -786,8 +866,6 @@
     }
 
     // ==================== FITNESS ====================
-    const FITNESS_TYPES = ['strength', 'cardio', 'hiit', 'flexibility', 'sports'];
-
     function setFitnessType(type) {
         fitnessType = type;
         document.querySelectorAll('.ft-btn').forEach(btn => btn.removeAttribute('data-a'));
@@ -798,7 +876,7 @@
         }
     }
 
-    function doFitnessLog() {
+    async function doFitnessLog() {
         if (!currentUser) return;
         const name = el.fName.value.trim() || fitnessType + ' session';
         const duration = parseInt(el.fDur.value) || 0;
@@ -865,7 +943,7 @@
             streak,
             lastLog: todayStr
         };
-        saveUser();
+        await saveUser();
 
         showXP(xpGain);
         el.fName.value = '';
@@ -882,10 +960,10 @@
         renderDashboard();
     }
 
-    function deleteWorkout(woId) {
+    async function deleteWorkout(woId) {
         if (!currentUser) return;
         currentUser.workouts = (currentUser.workouts || []).filter(w => w.id !== woId);
-        saveUser();
+        await saveUser();
         renderFitness();
         renderDashboard();
     }
@@ -925,7 +1003,6 @@
         const today = new Date().toDateString();
         const dq = currentUser.dailyQ || {};
 
-        // Daily quests
         const dailyDefs = [
             { id: 'dq_money', name: 'Log a Transaction', desc: 'Track any money move today', xp: 50, bg: 'rgba(16,185,129,0.1)', color: 'var(--income-l)', svg: '<svg width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>' },
             { id: 'dq_workout', name: 'Complete a Workout', desc: 'Log any fitness session today', xp: 75, bg: 'rgba(124,58,237,0.1)', color: 'var(--fit-ll)', svg: '<svg width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/></svg>' },
@@ -947,7 +1024,6 @@
             }).join('');
         }
 
-        // Milestone quests
         const milestones = [
             { id: 'ms_5tx', name: 'First 5 Logs', desc: 'Log 5 money transactions', xp: 80, cur: txs.length, goal: 5, bg: 'rgba(16,185,129,0.1)', color: 'var(--income-l)' },
             { id: 'ms_10tx', name: 'Money Momentum', desc: 'Log 10 money transactions', xp: 150, cur: txs.length, goal: 10, bg: 'rgba(16,185,129,0.1)', color: 'var(--income-l)' },
@@ -981,7 +1057,6 @@
             }).join('');
         }
 
-        // Badges
         if (el.qBadges) {
             el.qBadges.innerHTML = BADGES.map(b => {
                 const owned = (currentUser.badges || []).includes(b.id);
@@ -994,13 +1069,13 @@
         }
     }
 
-    function claimMilestone(id, xp, btn) {
+    async function claimMilestone(id, xp, btn) {
         if (!currentUser) return;
         if (!currentUser.claimedMs) currentUser.claimedMs = {};
         if (currentUser.claimedMs[id]) return;
         currentUser.claimedMs[id] = true;
         currentUser.xp = (currentUser.xp || 0) + xp;
-        saveUser();
+        await saveUser();
         showXP(xp);
         btn.className = 'mq-claimed';
         btn.textContent = 'Claimed ✓';
@@ -1058,9 +1133,9 @@
         const iconSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="100" fill="#06060f"/><rect width="512" height="512" rx="100" fill="url(#g)"/><defs><radialGradient id="g" cx="50%" cy="0%" r="100%"><stop offset="0%" stop-color="#3d1a7a"/><stop offset="100%" stop-color="#06060f"/></radialGradient></defs><polyline points="380,145 260,265 195,200 120,275" stroke="#c084fc" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" fill="none"/><polyline points="320,145 380,145 380,205" stroke="#fcd34d" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" fill="none"/><text x="256" y="420" text-anchor="middle" font-family="Arial Black,sans-serif" font-size="68" font-weight="900" fill="#c084fc" letter-spacing="-2">StackUp</text></svg>`;
         const iconURI = 'data:image/svg+xml;base64,' + btoa(iconSVG);
         const manifest = {
-            name: 'StackUp — Discipline App',
-            short_name: 'StackUp',
-            description: 'Money. Fitness. Discipline.',
+            name: 'FinsCope — Financial Fitness',
+            short_name: 'FinsCope',
+            description: 'Track money. Train body. Level up.',
             start_url: './',
             display: 'standalone',
             orientation: 'portrait-primary',
@@ -1081,7 +1156,7 @@
         document.head.appendChild(favicon);
 
         if ('serviceWorker' in navigator) {
-            const swCode = `const C='su-v5';self.addEventListener('install',e=>{self.skipWaiting();});self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(n=>n!==C).map(n=>caches.delete(n)))).then(()=>self.clients.claim()));});self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{if(res&&res.status===200){const c=res.clone();caches.open(C).then(cache=>cache.put(e.request,c));}return res;})));});`;
+            const swCode = `const C='fc-v1';self.addEventListener('install',e=>{self.skipWaiting();});self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(n=>n!==C).map(n=>caches.delete(n)))).then(()=>self.clients.claim()));});self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{if(res&&res.status===200){const c=res.clone();caches.open(C).then(cache=>cache.put(e.request,c));}return res;})));});`;
             navigator.serviceWorker.register(URL.createObjectURL(new Blob([swCode], { type: 'application/javascript' })), { scope: './' });
         }
 
@@ -1114,7 +1189,6 @@
 
     // ==================== INITIALIZATION ====================
     function initDOMReferences() {
-        // Auth
         el.auth = document.getElementById('auth');
         el.app = document.getElementById('app');
         el.authName = document.getElementById('auth-name');
@@ -1124,7 +1198,6 @@
         el.authAction = document.getElementById('auth-action');
         el.fnField = document.getElementById('fn-field');
 
-        // Top bar / sidebar
         el.mLv = document.getElementById('m-lv');
         el.mLvT = document.getElementById('m-lv-t');
         el.mXp = document.getElementById('m-xp');
@@ -1134,11 +1207,9 @@
         el.sbDisc = document.getElementById('sb-disc');
         el.sbFill = document.getElementById('sb-fill');
 
-        // Month strip
         el.monthStrip = document.getElementById('month-strip');
         el.deskMon = document.getElementById('desk-mon');
 
-        // Dashboard
         el.dName = document.getElementById('d-name');
         el.dRank = document.getElementById('d-rank');
         el.dDisc = document.getElementById('d-disc');
@@ -1169,7 +1240,6 @@
         el.todayQuests = document.getElementById('today-quests');
         el.dRecent = document.getElementById('d-recent');
 
-        // Money
         el.mAmt = document.getElementById('m-amt');
         el.mCat = document.getElementById('m-cat');
         el.mNote = document.getElementById('m-note');
@@ -1182,7 +1252,6 @@
         el.mHist = document.getElementById('m-hist');
         el.moneyLogBtn = document.getElementById('money-log-btn');
 
-        // Fitness
         el.fName = document.getElementById('f-name');
         el.fDur = document.getElementById('f-dur');
         el.fSets = document.getElementById('f-sets');
@@ -1198,12 +1267,10 @@
         el.fHist = document.getElementById('f-hist');
         el.fitnessLogBtn = document.getElementById('fitness-log-btn');
 
-        // Quests
         el.qDaily = document.getElementById('q-daily');
         el.qMilestones = document.getElementById('q-milestones');
         el.qBadges = document.getElementById('q-badges');
 
-        // Profile
         el.pfAv = document.getElementById('pf-av');
         el.pfName = document.getElementById('pf-name');
         el.pfEmail = document.getElementById('pf-email');
@@ -1217,7 +1284,6 @@
         el.pfSince = document.getElementById('pf-since');
         el.logoutBtn = document.getElementById('logout-btn');
 
-        // Misc
         el.badgeToast = document.getElementById('badge-toast');
         el.pwaB = document.getElementById('pwa-b');
         el.pwaInstallBtn = document.getElementById('pwa-install-btn');
@@ -1225,70 +1291,53 @@
     }
 
     function bindEvents() {
-        // Auth tabs
         document.querySelectorAll('.a-tab').forEach(btn => {
             btn.addEventListener('click', () => switchAuthMode(btn.dataset.authMode));
         });
 
-        // Auth action
         if (el.authAction) el.authAction.addEventListener('click', doAuth);
-
-        // Auth enter key
         el.authPassword.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') doAuth();
         });
 
-        // Navigation: sidebar & bottom nav
         document.querySelectorAll('[data-page]').forEach(btn => {
             btn.addEventListener('click', () => navigateTo(btn.dataset.page));
         });
 
-        // Month strip (delegation)
         document.addEventListener('click', (e) => {
             if (e.target.classList.contains('mon-btn') && e.target.dataset.month !== undefined) {
                 selectMonth(parseInt(e.target.dataset.month));
             }
         });
 
-        // Money type selection
         document.querySelectorAll('[data-money-type]').forEach(btn => {
             btn.addEventListener('click', () => setMoneyType(btn.dataset.moneyType));
         });
 
-        // Money log button
         if (el.moneyLogBtn) el.moneyLogBtn.addEventListener('click', doMoneyLog);
 
-        // Money filter
         document.querySelectorAll('.money-filter').forEach(btn => {
             btn.addEventListener('click', () => setMoneyFilter(btn.dataset.filter, btn));
         });
 
-        // Fitness type selection
         document.querySelectorAll('[data-fitness-type]').forEach(btn => {
             btn.addEventListener('click', () => setFitnessType(btn.dataset.fitnessType));
         });
 
-        // Fitness log button
         if (el.fitnessLogBtn) el.fitnessLogBtn.addEventListener('click', doFitnessLog);
-
-        // Logout
         if (el.logoutBtn) el.logoutBtn.addEventListener('click', logout);
 
-        // Event delegation for delete buttons and quest claims
         document.addEventListener('click', (e) => {
-            // Delete transaction
             if (e.target.closest('[data-delete-tx]')) {
                 const btn = e.target.closest('[data-delete-tx]');
                 const txId = parseInt(btn.dataset.deleteTx);
                 deleteTransaction(txId);
             }
-            // Delete workout
             if (e.target.closest('[data-delete-wo]')) {
                 const btn = e.target.closest('[data-delete-wo]');
                 const woId = parseInt(btn.dataset.deleteWo);
                 deleteWorkout(woId);
             }
-            // Daily quest claim
             if (e.target.closest('[data-daily-quest]')) {
                 const chk = e.target.closest('[data-daily-quest]');
                 if (chk.classList.contains('done')) return;
@@ -1296,7 +1345,6 @@
                 const xp = parseInt(chk.dataset.xp);
                 claimDailyQuest(questId, xp, chk);
             }
-            // Milestone claim
             if (e.target.closest('[data-milestone]')) {
                 const btn = e.target.closest('[data-milestone]');
                 const id = btn.dataset.milestone;
@@ -1305,20 +1353,8 @@
             }
         });
 
-        // PWA install/dismiss
         if (el.pwaInstallBtn) el.pwaInstallBtn.addEventListener('click', window.triggerInstall);
         if (el.pwaDismissBtn) el.pwaDismissBtn.addEventListener('click', window.dismissPWA);
-    }
-
-    // Auto-login if session exists
-    function autoLogin() {
-        const sessEmail = localStorage.getItem('su_sess');
-        if (sessEmail) {
-            const users = getAllUsers();
-            if (users[sessEmail]) {
-                loginUser(users[sessEmail]);
-            }
-        }
     }
 
     // Main init
@@ -1326,6 +1362,5 @@
         initDOMReferences();
         bindEvents();
         setupPWA();
-        autoLogin();
     });
 })();
